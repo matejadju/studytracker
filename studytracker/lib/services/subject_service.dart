@@ -1,0 +1,23 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/subject.dart';
+
+class SubjectService {
+  final _db = FirebaseFirestore.instance;
+
+  Future<void> addSubject(Subject subject) async {
+    await _db.collection('subjects').add(subject.toJson());
+  }
+
+  Stream<List<Subject>> getSubjects(String userId) {
+    return _db
+        .collection('subjects')
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((doc) => Subject.fromJson(doc.id, doc.data())).toList());
+  }
+
+  Future<void> deleteSubject(String id) async {
+    await _db.collection('subjects').doc(id).delete();
+  }
+}
