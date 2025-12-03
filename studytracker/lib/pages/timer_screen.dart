@@ -27,8 +27,6 @@ class _TimerScreenState extends State<TimerScreen> {
   DateTime? _startTime;
 
   List<Subject> _subjects = [];
-
-  /// 🔥 Dodato
   bool _loadingSubjects = true;
 
   String formatTime(int seconds) {
@@ -53,12 +51,6 @@ class _TimerScreenState extends State<TimerScreen> {
     _subjectService.getSubjectsOnce(user.uid).then((list) {
       setState(() {
         _subjects = list;
-
-        if (_subjects.isNotEmpty) {
-          _selectedSubjectId = _subjects.first.id;
-        }
-
-        /// 🔥 Ovo si hteo – označava kraj učitavanja
         _loadingSubjects = false;
       });
     });
@@ -147,7 +139,6 @@ class _TimerScreenState extends State<TimerScreen> {
       return const Center(child: Text('Niste prijavljeni.'));
     }
 
-    /// 🔥 Sprečava prerano renderovanje koje ti je uništavalo StreamBuilder!
     if (_loadingSubjects) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -162,10 +153,12 @@ class _TimerScreenState extends State<TimerScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             DropdownButtonFormField<String>(
+              key: ValueKey(_selectedSubjectId),
               decoration: const InputDecoration(
                 labelText: "Predmet",
                 border: OutlineInputBorder(),
               ),
+              hint: const Text("Izaberite predmet"),
               value: _selectedSubjectId,
               items: _subjects.map((s) {
                 return DropdownMenuItem(
@@ -222,41 +215,71 @@ class _TimerScreenState extends State<TimerScreen> {
             const SizedBox(height: 30),
 
             Expanded(
-              child: StreamBuilder<List<StudySession>>(
-                stream: _sessionService.getSessionsForSubject(
-                  _selectedSubjectId!,
-                  user.uid,
-                ),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+              child: _selectedSubjectId == null
+                  ? const Center(
+                      child: Text("Izaberite predmet da biste videli sesije."),
+                    )
+                  : StreamBuilder<List<StudySession>>(
+                      stream: _sessionService.getSessionsForSubject(
+                        _selectedSubjectId!,
+                        user.uid,
+                      ),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
 
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(
-                      child: Text("Nema snimljenih sesija za ovaj predmet."),
-                    );
-                  }
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const Center(
+                            child: Text("Nema snimljenih sesija za ovaj predmet."),
+                          );
+                        }
 
-                  final sessions = snapshot.data!;
+                        final sessions = snapshot.data!;
 
-                  return ListView.builder(
-                    itemCount: sessions.length,
-                    itemBuilder: (context, index) {
-                      final s = sessions[index];
-                      return Card(
-                        child: ListTile(
-                          leading: const Icon(Icons.timer),
-                          title: Text("${s.durationMinutes} minuta"),
-                          subtitle: Text(
-                            "${formatDate(s.startTime)} → ${formatDate(s.endTime)}",
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+                        // 🔥 ukupno vreme (po predmetu)
+                        final totalMinutes = sessions.fold<int>(
+                          0,
+                          (sum, s) => sum + s.durationMinutes,
+                        );
+
+                        return Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text(
+                                "Ukupno vreme: $totalMinutes minuta",
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: sessions.length,
+                                itemBuilder: (context, index) {
+                                  final s = sessions[index];
+                                  return Card(
+                                    child: ListTile(
+                                      leading: const Icon(Icons.timer),
+                                      title:
+                                          Text("${s.durationMinutes} minuta"),
+                                      subtitle: Text(
+                                        "${formatDate(s.startTime)} → ${formatDate(s.endTime)}",
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
             )
           ],
         ),
