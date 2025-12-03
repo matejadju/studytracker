@@ -5,8 +5,10 @@ class SubjectsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text("Predmeti screen placeholder")),
+    return const Center(
+      child: Text("Subjects screen placeholder"),
     );
   }
 }
+
+

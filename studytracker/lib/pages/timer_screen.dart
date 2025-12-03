@@ -5,9 +5,10 @@ class TimerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text("Timer screen placeholder"),
+    return const Center(
+      child: Text(
+        "Timer screen placeholder",
+        style: TextStyle(fontSize: 18),
       ),
     );
   }

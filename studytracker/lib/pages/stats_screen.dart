@@ -5,8 +5,8 @@ class StatsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text("Statistika screen placeholder")),
+    return const Center(
+      child: Text("Statistics screen placeholder"),
     );
   }
 }
