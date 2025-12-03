@@ -21,15 +21,16 @@ class _TimerScreenState extends State<TimerScreen> {
   Timer? _timer;
   bool _isRunning = false;
 
-  // umesto setState, samo on menja vreme
-final ValueNotifier<int> _elapsedSeconds = ValueNotifier<int>(0);
+  final ValueNotifier<int> _elapsedSeconds = ValueNotifier<int>(0);
 
   String? _selectedSubjectId;
   DateTime? _startTime;
 
-  List<Subject> _subjects = []; // predmeti učitani jednom
+  List<Subject> _subjects = [];
 
-  // formatiranje vremena
+  /// 🔥 Dodato
+  bool _loadingSubjects = true;
+
   String formatTime(int seconds) {
     final h = seconds ~/ 3600;
     final m = (seconds % 3600) ~/ 60;
@@ -40,15 +41,25 @@ final ValueNotifier<int> _elapsedSeconds = ValueNotifier<int>(0);
         '${s.toString().padLeft(2, '0')}';
   }
 
+  String formatDate(DateTime dt) {
+    return "${dt.day}.${dt.month}.${dt.year}. ${dt.hour}:${dt.minute.toString().padLeft(2, "0")}";
+  }
+
   @override
   void initState() {
     super.initState();
 
-    // UCITAVANJE PREDMETA SAMO JEDNOM
     final user = FirebaseAuth.instance.currentUser!;
-    _subjectService.getSubjects(user.uid).listen((list) {
+    _subjectService.getSubjectsOnce(user.uid).then((list) {
       setState(() {
         _subjects = list;
+
+        if (_subjects.isNotEmpty) {
+          _selectedSubjectId = _subjects.first.id;
+        }
+
+        /// 🔥 Ovo si hteo – označava kraj učitavanja
+        _loadingSubjects = false;
       });
     });
   }
@@ -83,41 +94,36 @@ final ValueNotifier<int> _elapsedSeconds = ValueNotifier<int>(0);
   }
 
   Future<void> _finishTimer() async {
-    if (_elapsedSeconds.value == 0 || _startTime == null || _selectedSubjectId == null) {
+    if (_elapsedSeconds.value == 0 ||
+        _startTime == null ||
+        _selectedSubjectId == null) {
       return;
     }
 
     _timer?.cancel();
 
     final endTime = DateTime.now();
-    final durationMinutes = (_elapsedSeconds.value / 60).round();
-
+    final durationMinutes = (_elapsedSeconds.value / 60).ceil();
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Niste prijavljeni.')),
-      );
-      return;
-    }
 
     final session = StudySession(
       id: '',
       subjectId: _selectedSubjectId!,
-      userId: user.uid,
+      userId: user!.uid,
       durationMinutes: durationMinutes,
       startTime: _startTime!,
       endTime: endTime,
-      periodTypeId: 'focus',
+      periodTypeId: 'weekly',
     );
 
     await _sessionService.addSession(session);
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Sesija uspešno sačuvana.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Sesija uspešno sačuvana.')),
+    );
 
-    // RESET TIMERA
     setState(() {
       _timer = null;
       _isRunning = false;
@@ -141,6 +147,13 @@ final ValueNotifier<int> _elapsedSeconds = ValueNotifier<int>(0);
       return const Center(child: Text('Niste prijavljeni.'));
     }
 
+    /// 🔥 Sprečava prerano renderovanje koje ti je uništavalo StreamBuilder!
+    if (_loadingSubjects) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Timer')),
       body: Padding(
@@ -148,13 +161,12 @@ final ValueNotifier<int> _elapsedSeconds = ValueNotifier<int>(0);
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // DROPDOWN – stabilan, ne treperi
             DropdownButtonFormField<String>(
-              value: _selectedSubjectId,
               decoration: const InputDecoration(
-                labelText: 'Predmet',
+                labelText: "Predmet",
                 border: OutlineInputBorder(),
               ),
+              value: _selectedSubjectId,
               items: _subjects.map((s) {
                 return DropdownMenuItem(
                   value: s.id,
@@ -170,14 +182,16 @@ final ValueNotifier<int> _elapsedSeconds = ValueNotifier<int>(0);
 
             const SizedBox(height: 40),
 
-            // TIMER – ažurira se bez rebuild-a
             Center(
               child: ValueListenableBuilder<int>(
                 valueListenable: _elapsedSeconds,
                 builder: (_, seconds, __) {
                   return Text(
                     formatTime(seconds),
-                    style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                    ),
                   );
                 },
               ),
@@ -185,7 +199,6 @@ final ValueNotifier<int> _elapsedSeconds = ValueNotifier<int>(0);
 
             const SizedBox(height: 40),
 
-            // DUGMIĆI – stabilni
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -205,6 +218,46 @@ final ValueNotifier<int> _elapsedSeconds = ValueNotifier<int>(0);
                 ),
               ],
             ),
+
+            const SizedBox(height: 30),
+
+            Expanded(
+              child: StreamBuilder<List<StudySession>>(
+                stream: _sessionService.getSessionsForSubject(
+                  _selectedSubjectId!,
+                  user.uid,
+                ),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(
+                      child: Text("Nema snimljenih sesija za ovaj predmet."),
+                    );
+                  }
+
+                  final sessions = snapshot.data!;
+
+                  return ListView.builder(
+                    itemCount: sessions.length,
+                    itemBuilder: (context, index) {
+                      final s = sessions[index];
+                      return Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.timer),
+                          title: Text("${s.durationMinutes} minuta"),
+                          subtitle: Text(
+                            "${formatDate(s.startTime)} → ${formatDate(s.endTime)}",
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            )
           ],
         ),
       ),
