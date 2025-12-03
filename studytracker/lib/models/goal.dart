@@ -13,7 +13,7 @@ class Goal {
   Goal({
     required this.id,
     required this.subjectId,
-    required this.userId, 
+    required this.userId,
     required this.periodType,
     required this.targetMinutes,
     required this.startDate,
@@ -23,7 +23,7 @@ class Goal {
 
   Map<String, dynamic> toJson() => {
         'subjectId': subjectId,
-        'userId': userId,  
+        'userId': userId,
         'periodType': periodType,
         'targetMinutes': targetMinutes,
         'startDate': startDate,
@@ -31,19 +31,23 @@ class Goal {
         'isCompleted': isCompleted,
       };
 
-  factory Goal.fromJson(String id, Map<String, dynamic> json) => Goal(
+  factory Goal.fromJson(String id, Map<String, dynamic> json) {
+    return Goal(
       id: id,
       subjectId: (json['subjectId'] ?? '') as String,
       userId: (json['userId'] ?? '') as String,
       periodType: (json['periodType'] ?? 'weekly') as String,
       targetMinutes: (json['targetMinutes'] ?? 0) as int,
+
       startDate: json['startDate'] is Timestamp
           ? (json['startDate'] as Timestamp).toDate()
           : (json['startDate'] as DateTime? ?? DateTime.now()),
+
       endDate: json['endDate'] is Timestamp
           ? (json['endDate'] as Timestamp).toDate()
           : (json['endDate'] as DateTime? ?? DateTime.now()),
+
       isCompleted: (json['isCompleted'] ?? false) as bool,
     );
-
+  }
 }

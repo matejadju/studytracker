@@ -4,7 +4,12 @@ class Subject {
   final String opis;
   final String userId;
 
-  Subject({required this.id, required this.name, required this.opis, required this.userId});
+  Subject({
+    required this.id,
+    required this.name,
+    required this.opis,
+    required this.userId,
+  });
 
   Map<String, dynamic> toJson() => {
         'name': name,
@@ -14,8 +19,8 @@ class Subject {
 
   factory Subject.fromJson(String id, Map<String, dynamic> json) => Subject(
         id: id,
-        name: json['name'],
-        opis: json['opis'],
-        userId: json['userId'],
+        name: (json['name'] ?? '') as String,
+        opis: (json['opis'] ?? '') as String,
+        userId: (json['userId'] ?? '') as String,
       );
 }

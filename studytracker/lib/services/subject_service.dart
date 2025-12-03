@@ -24,4 +24,15 @@ class SubjectService {
   Future<void> deleteSubject(String id) async {
     await _db.collection('subjects').doc(id).delete();
   }
+
+  Future<List<Subject>> getSubjectsOnce(String userId) async {
+  final snap = await _db
+      .collection('subjects')
+      .where('userId', isEqualTo: userId)
+      .get();
+
+  return snap.docs
+      .map((doc) => Subject.fromJson(doc.id, doc.data()))
+      .toList();
+}
 }
