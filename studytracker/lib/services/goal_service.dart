@@ -8,10 +8,21 @@ class GoalService {
     await _db.collection('goals').add(goal.toJson());
   }
 
-  Stream<List<Goal>> getGoals(String userId) {
+  // ostavi ako ti treba
+  Stream<List<Goal>> getGoalsForUser(String userId) {
     return _db
         .collection('goals')
         .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((doc) => Goal.fromJson(doc.id, doc.data())).toList());
+  }
+
+  Stream<List<Goal>> getGoalsForSubject(String userId, String subjectId) {
+    return _db
+        .collection('goals')
+        .where('userId', isEqualTo: userId)
+        .where('subjectId', isEqualTo: subjectId)
         .snapshots()
         .map((snap) =>
             snap.docs.map((doc) => Goal.fromJson(doc.id, doc.data())).toList());
