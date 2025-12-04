@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/subject.dart';
 import '../models/goal.dart';
 import '../services/goal_service.dart';
+import '../services/subject_service.dart';
 
 class SubjectDetailPage extends StatelessWidget {
   SubjectDetailPage({
@@ -43,7 +44,6 @@ class SubjectDetailPage extends StatelessWidget {
         ],
       ),
       floatingActionButton: Theme(
-        // da FAB ne potamni boju u M3
         data: Theme.of(context).copyWith(useMaterial3: false),
         child: FloatingActionButton.extended(
           onPressed: () => _showAddGoalBottomSheet(context, uid),
@@ -62,7 +62,7 @@ class SubjectDetailPage extends StatelessWidget {
         children: [
           const SizedBox(height: 12),
 
-          // HEADER CARD – subject info
+          // --- HEADER CARD ---
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Card(
@@ -120,7 +120,47 @@ class SubjectDetailPage extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // GOALS LIST
+          // --- GRADE CARD ---
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Card(
+              elevation: isDark ? 1 : 3,
+              color: theme.cardColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 18, vertical: 16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.grade_outlined, size: 28),
+                    const SizedBox(width: 16),
+
+                    Expanded(
+                      child: Text(
+                        subject.grade == null
+                            ? "No grade set"
+                            : "Grade: ${subject.grade}",
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+
+                    ElevatedButton(
+                      onPressed: () => _showAddGradeSheet(context),
+                      child: Text(subject.grade == null ? "Add" : "Edit"),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // --- GOALS LIST ---
           Expanded(
             child: StreamBuilder<List<Goal>>(
               stream: _goalService.getGoalsForSubject(uid, subject.id),
@@ -145,43 +185,27 @@ class SubjectDetailPage extends StatelessWidget {
                 final goals = snapshot.data!;
                 if (goals.isEmpty) {
                   return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.flag_outlined,
-                              size: 52,
-                              color: theme.iconTheme.color?.withOpacity(0.5)),
-                          const SizedBox(height: 12),
-                          Text(
-                            'No goals yet',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.flag_outlined,
+                            size: 52,
+                            color: theme.iconTheme.color?.withOpacity(0.5)),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No goals yet',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Tap the "Add goal" button to create your first goal for this subject.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.textTheme.bodySmall?.color
-                                  ?.withOpacity(0.7),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   );
                 }
 
                 return ListView.builder(
                   padding: const EdgeInsets.only(
-                    top: 8,
-                    bottom: 96,
-                    left: 16,
-                    right: 16,
-                  ),
+                      top: 8, bottom: 96, left: 16, right: 16),
                   itemCount: goals.length,
                   itemBuilder: (context, index) {
                     final goal = goals[index];
@@ -200,147 +224,76 @@ class SubjectDetailPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       elevation: isDark ? 1 : 2,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () async {
-                          final newValue = !goal.isCompleted;
-                          await _goalService.updateGoalCompletion(
-                              goal.id, newValue);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                newValue
-                                    ? "Goal marked as completed."
-                                    : "Goal marked as incomplete.",
-                              ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: goal.isCompleted,
+                              onChanged: (value) async {
+                                if (value == null) return;
+                                await _goalService.updateGoalCompletion(
+                                    goal.id, value);
+                              },
                             ),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
-                          child: Row(
-                            children: [
-                              Checkbox(
-                                value: goal.isCompleted,
-                                onChanged: (value) async {
-                                  if (value == null) return;
-                                  await _goalService.updateGoalCompletion(
-                                      goal.id, value);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        value
-                                            ? "Goal marked as completed."
-                                            : "Goal marked as incomplete.",
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 4),
 
-                              // main text
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          '${goal.targetMinutes} min',
-                                          style: theme.textTheme.bodyMedium
-                                              ?.copyWith(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                            const SizedBox(width: 4),
+
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        '${goal.targetMinutes} min',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                          fontWeight: FontWeight.w600,
                                         ),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: (periodLabel == 'Weekly'
-                                                    ? theme
-                                                        .colorScheme.primary
-                                                    : theme
-                                                        .colorScheme.secondary)
-                                                .withOpacity(0.12),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                          child: Text(
-                                            periodLabel,
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              color: periodLabel == 'Weekly'
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: (periodLabel == 'Weekly'
                                                   ? theme.colorScheme.primary
                                                   : theme
-                                                      .colorScheme.secondary,
-                                            ),
+                                                      .colorScheme.secondary)
+                                              .withOpacity(0.12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          periodLabel,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: periodLabel == 'Weekly'
+                                                ? theme.colorScheme.primary
+                                                : theme
+                                                    .colorScheme.secondary,
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      dateRange,
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                              color: theme
-                                                  .textTheme.bodySmall?.color
-                                                  ?.withOpacity(0.7)),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  size: 22,
-                                ),
-                                onPressed: () async {
-                                  final confirmed = await showDialog<bool>(
-                                    context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      title: const Text('Delete goal'),
-                                      content: const Text(
-                                        'Are you sure you want to delete this goal?',
                                       ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(ctx, false),
-                                          child: const Text('Cancel'),
-                                        ),
-                                        ElevatedButton(
-                                          onPressed: () =>
-                                              Navigator.pop(ctx, true),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.red,
-                                          ),
-                                          child: const Text('Delete'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-
-                                  if (confirmed == true) {
-                                    await _goalService.deleteGoal(goal.id);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text("Goal deleted."),
-                                      ),
-                                    );
-                                  }
-                                },
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    dateRange,
+                                    style: theme.textTheme.bodySmall
+                                        ?.copyWith(
+                                            color: theme.textTheme.bodySmall
+                                                ?.color
+                                                ?.withOpacity(0.7)),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -353,6 +306,103 @@ class SubjectDetailPage extends StatelessWidget {
       ),
     );
   }
+
+  // ----------------- ADD GRADE BOTTOMSHEET -----------------
+
+  void _showAddGradeSheet(BuildContext context) {
+    int selected = subject.grade ?? 6;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        final isDark = theme.brightness == Brightness.dark;
+
+        return StatefulBuilder(
+          builder: (context, setState) => Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+              left: 16,
+              right: 16,
+              top: 8,
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? theme.colorScheme.surface
+                    : theme.colorScheme.background,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  Text(
+                    "Set grade for ${subject.name}",
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  DropdownButtonFormField<int>(
+                    value: selected,
+                    decoration: const InputDecoration(
+                      labelText: "Grade",
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [6, 7, 8, 9, 10].map((g) {
+                      return DropdownMenuItem(
+                        value: g,
+                        child: Text("$g"),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => selected = value);
+                      }
+                    },
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        await SubjectService()
+                            .updateGrade(subject.id, selected);
+
+                        Navigator.pop(context);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Grade updated")),
+                        );
+                      },
+                      child: const Text("Save"),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
 
   // -------- bottom sheet za dodavanje goal-a (dark friendly) --------
 

@@ -35,4 +35,11 @@ class SubjectService {
       .map((doc) => Subject.fromJson(doc.id, doc.data()))
       .toList();
 }
+
+Future<void> updateGrade(String subjectId, int grade) async {
+  await _db.collection('subjects').doc(subjectId).update({
+    'grade': grade,
+  });
+}
+
 }

@@ -78,6 +78,59 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
               // HEADER
               _buildHeader(context, subjectsCount: subjects.length),
 
+              // AVERAGE GRADE CARD
+StreamBuilder<List<Subject>>(
+  stream: _subjectService.getSubjects(uid),
+  builder: (context, snapshot) {
+    if (!snapshot.hasData) return const SizedBox(height: 0);
+
+    final subjects = snapshot.data!;
+    final graded = subjects.where((s) => s.grade != null).toList();
+
+    if (graded.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Text(
+          "Average grade: N/A",
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    }
+
+    final avg = graded.map((s) => s.grade!).reduce((a, b) => a + b) / graded.length;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Card(
+        elevation: 3,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const Icon(Icons.star_half, size: 28),
+              const SizedBox(width: 12),
+              Text(
+                "Average grade: ${avg.toStringAsFixed(2)}",
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  },
+),
+
+
               // SEARCH
               Padding(
                 padding:
