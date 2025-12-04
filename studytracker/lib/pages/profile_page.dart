@@ -3,7 +3,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  const ProfilePage({
+    super.key,
+    required this.onToggleTheme,
+    required this.isDarkMode,
+  });
+
+  final VoidCallback onToggleTheme;
+  final bool isDarkMode;
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -37,6 +44,8 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     if (user == null) {
       return const Scaffold(
@@ -81,7 +90,6 @@ class _ProfilePageState extends State<ProfilePage> {
             displayName = '-';
           }
         } else {
-          // nema dokumenta u Firestore
           if (user.displayName != null && user.displayName!.trim().isNotEmpty) {
             displayName = user.displayName!.trim();
           } else if (email.contains('@')) {
@@ -96,12 +104,10 @@ class _ProfilePageState extends State<ProfilePage> {
             : 'U';
 
         return Scaffold(
-          backgroundColor: Colors.grey.shade100,
-          appBar: AppBar(
-            elevation: 0,
-            title: const Text('Profile'),
-          ),
+          backgroundColor: theme.scaffoldBackgroundColor,
+          // AppBar ovde nam ne treba, već ga imamo u HomeScreen-u
           body: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // HEADER
               Container(
@@ -167,7 +173,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 16),
 
-              // BODY
               Expanded(
                 child: SingleChildScrollView(
                   padding:
@@ -176,7 +181,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       // ACCOUNT INFO
                       Card(
-                        elevation: 3,
+                        color: isDark ? theme.cardColor : null,
+                        elevation: isDark ? 1 : 3,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -185,27 +191,29 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 "Account details",
-                                style: TextStyle(
-                                  fontSize: 16,
+                                style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                               const SizedBox(height: 12),
                               _infoRow(
+                                theme: theme,
                                 icon: Icons.person_outline,
                                 label: "Name",
                                 value: displayName,
                               ),
                               const SizedBox(height: 8),
                               _infoRow(
+                                theme: theme,
                                 icon: Icons.email_outlined,
                                 label: "Email",
                                 value: email,
                               ),
                               const SizedBox(height: 8),
                               _infoRow(
+                                theme: theme,
                                 icon: Icons.fingerprint,
                                 label: "User ID",
                                 value: uid,
@@ -217,9 +225,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
                       const SizedBox(height: 16),
 
-                      // OVERVIEW PLACEHOLDER
+                      // OVERVIEW
                       Card(
-                        elevation: 3,
+                        color: isDark ? theme.cardColor : null,
+                        elevation: isDark ? 1 : 3,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -228,49 +237,48 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 "StudyTracker overview",
-                                style: TextStyle(
-                                  fontSize: 16,
+                                style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                               const SizedBox(height: 12),
                               Row(
-                                children: const [
-                                  Icon(Icons.timer, size: 20),
-                                  SizedBox(width: 8),
+                                children: [
+                                  const Icon(Icons.timer, size: 20),
+                                  const SizedBox(width: 8),
                                   Text(
                                     "Total study time:",
-                                    style: TextStyle(fontSize: 14),
+                                    style: theme.textTheme.bodyMedium,
                                   ),
-                                  SizedBox(width: 6),
+                                  const SizedBox(width: 6),
                                   Text(
                                     "coming soon",
-                                    style: TextStyle(
-                                      fontSize: 14,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
                                       fontStyle: FontStyle.italic,
-                                      color: Colors.grey,
+                                      color: theme.colorScheme.onSurface
+                                          .withOpacity(0.6),
                                     ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 6),
                               Row(
-                                children: const [
-                                  Icon(Icons.menu_book_outlined, size: 20),
-                                  SizedBox(width: 8),
+                                children: [
+                                  const Icon(Icons.menu_book_outlined, size: 20),
+                                  const SizedBox(width: 8),
                                   Text(
                                     "Subjects tracked:",
-                                    style: TextStyle(fontSize: 14),
+                                    style: theme.textTheme.bodyMedium,
                                   ),
-                                  SizedBox(width: 6),
+                                  const SizedBox(width: 6),
                                   Text(
                                     "coming soon",
-                                    style: TextStyle(
-                                      fontSize: 14,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
                                       fontStyle: FontStyle.italic,
-                                      color: Colors.grey,
+                                      color: theme.colorScheme.onSurface
+                                          .withOpacity(0.6),
                                     ),
                                   ),
                                 ],
@@ -296,6 +304,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                       email: email,
                                       initialFirstName: firstName,
                                       initialLastName: lastName,
+                                      onToggleTheme: widget.onToggleTheme,
+                                      isDarkMode: widget.isDarkMode,
                                     ),
                                   ),
                                 );
@@ -355,12 +365,17 @@ class EditProfilePage extends StatefulWidget {
     required this.email,
     required this.initialFirstName,
     required this.initialLastName,
+    required this.onToggleTheme,
+    required this.isDarkMode,
   });
 
   final String uid;
   final String email;
   final String initialFirstName;
   final String initialLastName;
+
+  final VoidCallback onToggleTheme;
+  final bool isDarkMode;
 
   @override
   State<EditProfilePage> createState() => _EditProfilePageState();
@@ -385,7 +400,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.dispose();
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon) {
+  InputDecoration _inputDecoration(BuildContext context, String label, IconData icon) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon),
@@ -401,7 +419,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
         borderSide: const BorderSide(width: 2),
       ),
       filled: true,
-      fillColor: Colors.grey.shade100,
+      fillColor:
+          isDark ? theme.colorScheme.surfaceVariant : Colors.grey.shade100,
     );
   }
 
@@ -456,11 +475,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Edit profile'),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(
+              widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+            ),
+            tooltip: widget.isDarkMode
+                ? 'Switch to light mode'
+                : 'Switch to dark mode',
+            onPressed: widget.onToggleTheme,
+          ),
+        ],
       ),
       body: SafeArea(
         child: LayoutBuilder(
@@ -469,7 +501,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  // da se kolona rastegne na visinu ekrana pa da može da se centrira
                   minHeight: constraints.maxHeight - 32,
                 ),
                 child: Center(
@@ -480,9 +511,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           "Update your details",
-                          style: TextStyle(
+                          style: theme.textTheme.titleLarge?.copyWith(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
                           ),
@@ -490,14 +521,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         const SizedBox(height: 4),
                         Text(
                           "These details are shown in your StudyTracker profile.",
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
                         const SizedBox(height: 20),
 
-                        // bela kartica sa inputima
                         Card(
                           elevation: 4,
                           shape: RoundedRectangleBorder(
@@ -513,6 +542,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 TextField(
                                   controller: _firstNameController,
                                   decoration: _inputDecoration(
+                                    context,
                                     'First name',
                                     Icons.person_outline,
                                   ),
@@ -521,6 +551,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 TextField(
                                   controller: _lastNameController,
                                   decoration: _inputDecoration(
+                                    context,
                                     'Last name',
                                     Icons.badge_outlined,
                                   ),
@@ -573,6 +604,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
 // helper za info redove
 Widget _infoRow({
+  required ThemeData theme,
   required IconData icon,
   required String label,
   required String value,
@@ -588,16 +620,14 @@ Widget _infoRow({
           children: [
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
             const SizedBox(height: 2),
             Text(
               value.isEmpty ? "-" : value,
-              style: const TextStyle(
-                fontSize: 14,
+              style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
               ),
             ),

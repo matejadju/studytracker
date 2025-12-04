@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'login_page.dart';
-
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
+  const RegisterPage({
+    super.key,
+    required this.onToggleTheme,
+    required this.isDarkMode,
+  });
+
+  final VoidCallback onToggleTheme;
+  final bool isDarkMode;
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -32,7 +37,7 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Create user in Firebase Auth
+      // 1. Kreiraj user-a u Firebase Auth
       final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
@@ -40,7 +45,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
       final uid = cred.user!.uid;
 
-      // 2. Save user profile in Firestore
+      // 2. Sačuvaj profil u Firestore
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'firstName': firstNameController.text.trim(),
         'lastName': lastNameController.text.trim(),
@@ -48,20 +53,18 @@ class _RegisterPageState extends State<RegisterPage> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // 3. Sign out so user must log in manually
+      // 3. Izloguj user-a – mora ponovo da se loguje
       await FirebaseAuth.instance.signOut();
 
       if (!mounted) return;
 
-      // 4. Navigate back to login page
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginPage()),
-      );
+      // 4. Samo se vrati nazad na Login stranu
+      Navigator.pop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text("Registration successful! Please log in.")),
+          content: Text("Registration successful! Please log in."),
+        ),
       );
     } on FirebaseAuthException catch (e) {
       String message = 'Error during registration.';
@@ -82,7 +85,11 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  InputDecoration _inputDecoration(String label, {IconData? icon}) {
+  InputDecoration _inputDecoration(BuildContext context, String label,
+      {IconData? icon}) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return InputDecoration(
       labelText: label,
       prefixIcon: icon != null ? Icon(icon) : null,
@@ -98,15 +105,34 @@ class _RegisterPageState extends State<RegisterPage> {
         borderSide: const BorderSide(width: 2),
       ),
       filled: true,
-      fillColor: Colors.grey.shade100,
+      fillColor: isDark
+          ? theme.colorScheme.surfaceVariant
+          : Colors.grey.shade100,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      // light background
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        automaticallyImplyLeading: true, // back strelica ka Login
+        actions: [
+          IconButton(
+            icon: Icon(
+              widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+            ),
+            tooltip: widget.isDarkMode
+                ? 'Switch to light mode'
+                : 'Switch to dark mode',
+            onPressed: widget.onToggleTheme,
+          ),
+        ],
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -149,6 +175,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     TextField(
                       controller: firstNameController,
                       decoration: _inputDecoration(
+                        context,
                         "First name",
                         icon: Icons.person_outline,
                       ),
@@ -159,6 +186,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     TextField(
                       controller: lastNameController,
                       decoration: _inputDecoration(
+                        context,
                         "Last name",
                         icon: Icons.person,
                       ),
@@ -170,6 +198,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       controller: emailController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: _inputDecoration(
+                        context,
                         "Email",
                         icon: Icons.email_outlined,
                       ),
@@ -181,17 +210,19 @@ class _RegisterPageState extends State<RegisterPage> {
                       controller: passwordController,
                       obscureText: true,
                       decoration: _inputDecoration(
+                        context,
                         "Password",
                         icon: Icons.lock_outline,
                       ),
                     ),
                     const SizedBox(height: 16),
 
-                    // Repeat password
+                    // Confirm password
                     TextField(
                       controller: repeatPassController,
                       obscureText: true,
                       decoration: _inputDecoration(
+                        context,
                         "Confirm password",
                         icon: Icons.lock_reset,
                       ),
@@ -225,21 +256,6 @@ class _RegisterPageState extends State<RegisterPage> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => const LoginPage()),
-                        );
-                      },
-                      child: const Text(
-                        "Already have an account? Log in",
-                        style: TextStyle(fontSize: 13),
                       ),
                     ),
                   ],

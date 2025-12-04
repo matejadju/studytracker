@@ -5,30 +5,47 @@ import 'stats_screen.dart';
 import 'profile_page.dart';
 import '../services/notification_service.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({
+    super.key,
+    required this.onToggleTheme,
+    required this.isDarkMode,
+    required this.selectedIndex,
+    required this.onTabChange,
+  });
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
+  final VoidCallback onToggleTheme;
+  final bool isDarkMode;
 
-class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _pages = [
-    TimerScreen(),
-    SubjectsScreen(),
-    StatsScreen(),
-    ProfilePage(),
-  ];
+  final int selectedIndex;               
+  final ValueChanged<int> onTabChange;   
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> pages = [
+      const TimerScreen(),
+      SubjectsScreen(),
+      const StatsScreen(),
+      ProfilePage(                    // 👈 OVDE prosledimo
+        onToggleTheme: onToggleTheme,
+        isDarkMode: isDarkMode,
+      ),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('StudyTracker'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: Icon(
+              isDarkMode ? Icons.light_mode : Icons.dark_mode,
+            ),
+            tooltip: isDarkMode
+                ? 'Switch to light mode'
+                : 'Switch to dark mode',
+            onPressed: onToggleTheme,
+          ),
           IconButton(
             icon: const Icon(Icons.notifications),
             onPressed: () {
@@ -40,17 +57,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: _pages[_selectedIndex],
+      body: pages[selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue, // selected tab
-        unselectedItemColor: Colors.grey, // other tabs
-        backgroundColor: Colors.white, // bar background
+        currentIndex: selectedIndex,
         showUnselectedLabels: true,
-        onTap: (index) {
-          setState(() => _selectedIndex = index);
-        },
+        onTap: onTabChange,   // više nema setState ovde
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.timer), label: "Timer"),
           BottomNavigationBarItem(icon: Icon(Icons.book), label: "Subjects"),
