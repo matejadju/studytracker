@@ -61,8 +61,7 @@ class ProfilePage extends StatelessWidget {
           }
         } else {
           // ako nema dokumenta u Firestore
-          if (user.displayName != null &&
-              user.displayName!.trim().isNotEmpty) {
+          if (user.displayName != null && user.displayName!.trim().isNotEmpty) {
             displayName = user.displayName!.trim();
           } else if (email.contains('@')) {
             displayName = email.split('@').first;

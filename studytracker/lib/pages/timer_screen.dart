@@ -34,13 +34,17 @@ class _TimerScreenState extends State<TimerScreen> {
     final m = (seconds % 3600) ~/ 60;
     final s = seconds % 60;
 
-    return '${h.toString().padLeft(2, '0')}:'
-        '${m.toString().padLeft(2, '0')}:'
+    return '${h.toString().padLeft(2, '0')} : '
+        '${m.toString().padLeft(2, '0')} : '
         '${s.toString().padLeft(2, '0')}';
   }
 
   String formatDate(DateTime dt) {
-    return "${dt.day}.${dt.month}.${dt.year}. ${dt.hour}:${dt.minute.toString().padLeft(2, "0")}";
+    return "${dt.day.toString().padLeft(2, '0')}."
+        "${dt.month.toString().padLeft(2, '0')}."
+        "${dt.year}  "
+        "${dt.hour.toString().padLeft(2, '0')}:"
+        "${dt.minute.toString().padLeft(2, '0')}";
   }
 
   @override
@@ -49,8 +53,12 @@ class _TimerScreenState extends State<TimerScreen> {
 
     final user = FirebaseAuth.instance.currentUser!;
     _subjectService.getSubjectsOnce(user.uid).then((list) {
+      if (!mounted) return;
       setState(() {
         _subjects = list;
+        if (_subjects.isNotEmpty) {
+          _selectedSubjectId = _subjects.first.id;
+        }
         _loadingSubjects = false;
       });
     });
@@ -59,7 +67,7 @@ class _TimerScreenState extends State<TimerScreen> {
   void _startTimer() {
     if (_selectedSubjectId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Izaberite predmet pre pokretanja timera.')),
+        const SnackBar(content: Text('Please select a subject first.')),
       );
       return;
     }
@@ -73,6 +81,7 @@ class _TimerScreenState extends State<TimerScreen> {
 
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       _elapsedSeconds.value++;
+      if (mounted) {}
     });
   }
 
@@ -113,7 +122,7 @@ class _TimerScreenState extends State<TimerScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sesija uspešno sačuvana.')),
+      const SnackBar(content: Text('Study session saved successfully.')),
     );
 
     setState(() {
@@ -136,7 +145,9 @@ class _TimerScreenState extends State<TimerScreen> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      return const Center(child: Text('Niste prijavljeni.'));
+      return const Scaffold(
+        body: Center(child: Text('You are not logged in.')),
+      );
     }
 
     if (_loadingSubjects) {
@@ -146,144 +157,375 @@ class _TimerScreenState extends State<TimerScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Timer')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            DropdownButtonFormField<String>(
-              key: ValueKey(_selectedSubjectId),
-              decoration: const InputDecoration(
-                labelText: "Predmet",
-                border: OutlineInputBorder(),
+      backgroundColor: Colors.grey.shade100,
+      appBar: AppBar(
+        title: const Text('Focus timer'),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              // SUBJECT + INFO CARD
+              _SubjectCard(
+                subjects: _subjects,
+                selectedSubjectId: _selectedSubjectId,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedSubjectId = value;
+                  });
+                },
               ),
-              hint: const Text("Izaberite predmet"),
-              value: _selectedSubjectId,
-              items: _subjects.map((s) {
+
+              const SizedBox(height: 16),
+
+              // TIMER CARD (lepši izgled)
+              _TimerCard(
+                elapsedSeconds: _elapsedSeconds,
+                isRunning: _isRunning,
+                onStart: _startTimer,
+                onPause: _pauseTimer,
+                onFinish: _elapsedSeconds.value > 0 ? _finishTimer : null,
+              ),
+
+              const SizedBox(height: 16),
+
+              // HISTORY
+              Expanded(
+                child: _selectedSubjectId == null
+                    ? const Center(
+                        child: Text(
+                          "Select a subject to see your study sessions.",
+                        ),
+                      )
+                    : _SessionsHistory(
+                        subjectId: _selectedSubjectId!,
+                        userId: user.uid,
+                        formatDate: formatDate,
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------
+// UI WIDGETI
+// ---------------------
+
+class _SubjectCard extends StatelessWidget {
+  const _SubjectCard({
+    required this.subjects,
+    required this.selectedSubjectId,
+    required this.onChanged,
+  });
+
+  final List<Subject> subjects;
+  final String? selectedSubjectId;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.school,
+              color: Colors.blue.shade700,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              decoration: const InputDecoration(
+                labelText: "Subject",
+                border: InputBorder.none,
+                isDense: true,
+              ),
+              isExpanded: true,
+              value: selectedSubjectId,
+              items: subjects.map((s) {
                 return DropdownMenuItem(
                   value: s.id,
                   child: Text(s.name),
                 );
               }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedSubjectId = value;
-                });
-              },
+              onChanged: onChanged,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-            const SizedBox(height: 40),
+class _TimerCard extends StatelessWidget {
+  const _TimerCard({
+    required this.elapsedSeconds,
+    required this.isRunning,
+    required this.onStart,
+    required this.onPause,
+    required this.onFinish,
+  });
 
-            Center(
-              child: ValueListenableBuilder<int>(
-                valueListenable: _elapsedSeconds,
-                builder: (_, seconds, __) {
-                  return Text(
-                    formatTime(seconds),
-                    style: const TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
+  final ValueNotifier<int> elapsedSeconds;
+  final bool isRunning;
+  final VoidCallback onStart;
+  final VoidCallback onPause;
+  final Future<void> Function()? onFinish;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          colors: [
+            Colors.blue.shade600,
+            Colors.blue.shade400,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.shade200.withOpacity(0.5),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Text(
+            "Focus session",
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ValueListenableBuilder<int>(
+            valueListenable: elapsedSeconds,
+            builder: (_, seconds, __) {
+              final h = seconds ~/ 3600;
+              final m = (seconds % 3600) ~/ 60;
+              final s = seconds % 60;
+
+              return Container(
+                width: 170,
+                height: 170,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.08),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 2,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${h.toString().padLeft(2, '0')} : '
+                  '${m.toString().padLeft(2, '0')} : '
+                  '${s.toString().padLeft(2, '0')}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _TimerActionButton(
+                icon: Icons.play_arrow_rounded,
+                label: "Start",
+                onPressed: isRunning ? null : onStart,
+                background: Colors.white,
+                foreground: Colors.blue.shade700,
+              ),
+              const SizedBox(width: 12),
+              _TimerActionButton(
+                icon: Icons.pause_rounded,
+                label: "Pause",
+                onPressed: isRunning ? onPause : null,
+                background: Colors.white.withOpacity(0.12),
+                foreground: Colors.white,
+              ),
+              const SizedBox(width: 12),
+              _TimerActionButton(
+                icon: Icons.check_rounded,
+                label: "Finish",
+                onPressed: (elapsedSeconds.value > 0 && onFinish != null)
+                    ? () {
+                        onFinish!(); // pozovemo async funkciju, ali ne vraćamo ništa
+                      }
+                    : null,
+                background: Colors.white.withOpacity(0.12),
+                foreground: Colors.white,
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isRunning ? "Timer is running..." : "Tap Start to begin studying.",
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimerActionButton extends StatelessWidget {
+  const _TimerActionButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    required this.background,
+    required this.foreground,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnabled = onPressed != null;
+
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 20),
+      label: Text(label),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isEnabled ? background : background.withOpacity(0.6),
+        foregroundColor: foreground,
+        disabledForegroundColor: foreground.withOpacity(0.4),
+        disabledBackgroundColor: background.withOpacity(0.3),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30),
+        ),
+        elevation: isEnabled ? 2 : 0,
+      ),
+    );
+  }
+}
+
+class _SessionsHistory extends StatelessWidget {
+  const _SessionsHistory({
+    required this.subjectId,
+    required this.userId,
+    required this.formatDate,
+  });
+
+  final String subjectId;
+  final String userId;
+  final String Function(DateTime) formatDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final sessionService = StudySessionService();
+
+    return StreamBuilder<List<StudySession>>(
+      stream: sessionService.getSessionsForSubject(subjectId, userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(
+            child: Text("No saved sessions for this subject yet."),
+          );
+        }
+
+        final sessions = snapshot.data!;
+        final totalMinutes = sessions.fold<int>(
+          0,
+          (sum, s) => sum + s.durationMinutes,
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Study history",
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Total time: $totalMinutes minutes",
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[700],
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.builder(
+                itemCount: sessions.length,
+                itemBuilder: (context, index) {
+                  final s = sessions[index];
+                  return Card(
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: ListTile(
+                      leading: const CircleAvatar(
+                        child: Icon(Icons.timer_outlined),
+                      ),
+                      title: Text("${s.durationMinutes} minutes"),
+                      subtitle: Text(
+                        "${formatDate(s.startTime)} → ${formatDate(s.endTime)}",
+                      ),
                     ),
                   );
                 },
               ),
             ),
-
-            const SizedBox(height: 40),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: _isRunning ? null : _startTimer,
-                  child: const Text('Start'),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: _isRunning ? _pauseTimer : null,
-                  child: const Text('Pause'),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: _elapsedSeconds.value > 0 ? _finishTimer : null,
-                  child: const Text('Finish'),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 30),
-
-            Expanded(
-              child: _selectedSubjectId == null
-                  ? const Center(
-                      child: Text("Izaberite predmet da biste videli sesije."),
-                    )
-                  : StreamBuilder<List<StudySession>>(
-                      stream: _sessionService.getSessionsForSubject(
-                        _selectedSubjectId!,
-                        user.uid,
-                      ),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                              child: CircularProgressIndicator());
-                        }
-
-                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return const Center(
-                            child: Text("Nema snimljenih sesija za ovaj predmet."),
-                          );
-                        }
-
-                        final sessions = snapshot.data!;
-
-                        // 🔥 ukupno vreme (po predmetu)
-                        final totalMinutes = sessions.fold<int>(
-                          0,
-                          (sum, s) => sum + s.durationMinutes,
-                        );
-
-                        return Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: Text(
-                                "Ukupno vreme: $totalMinutes minuta",
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-
-                            Expanded(
-                              child: ListView.builder(
-                                itemCount: sessions.length,
-                                itemBuilder: (context, index) {
-                                  final s = sessions[index];
-                                  return Card(
-                                    child: ListTile(
-                                      leading: const Icon(Icons.timer),
-                                      title:
-                                          Text("${s.durationMinutes} minuta"),
-                                      subtitle: Text(
-                                        "${formatDate(s.startTime)} → ${formatDate(s.endTime)}",
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-            )
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 }
