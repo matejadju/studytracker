@@ -5,10 +5,16 @@ import '../models/subject.dart';
 import '../services/subject_service.dart';
 import 'subject_detail_page.dart';
 
-class SubjectsScreen extends StatelessWidget {
-  SubjectsScreen({super.key});
+class SubjectsScreen extends StatefulWidget {
+  const SubjectsScreen({super.key});
 
+  @override
+  State<SubjectsScreen> createState() => _SubjectsScreenState();
+}
+
+class _SubjectsScreenState extends State<SubjectsScreen> {
   final SubjectService _subjectService = SubjectService();
+  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
@@ -21,9 +27,16 @@ class SubjectsScreen extends StatelessWidget {
     final uid = user.uid;
 
     return Scaffold(
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
+        elevation: 0,
         title: const Text('Subjects'),
         centerTitle: true,
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddEditSubjectDialog(context: context, uid: uid),
+        icon: const Icon(Icons.add),
+        label: const Text('Add subject'),
       ),
       body: StreamBuilder<List<Subject>>(
         stream: _subjectService.getSubjects(uid),
@@ -36,119 +49,194 @@ class SubjectsScreen extends StatelessWidget {
           }
 
           final subjects = snapshot.data!;
-          if (subjects.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.school, size: 52, color: Colors.grey),
-                  SizedBox(height: 12),
-                  Text(
-                    'No subjects yet',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
+          final filtered = subjects
+              .where((s) =>
+                  s.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+              .toList();
+
+          return Column(
+            children: [
+              // HEADER
+              _buildHeader(context, subjectsCount: subjects.length),
+
+              // SEARCH
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: TextField(
+                  onChanged: (value) => setState(() {
+                    _searchQuery = value;
+                  }),
+                  decoration: InputDecoration(
+                    hintText: 'Search subjects',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(width: 2),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Tap + to add your first subject.',
-                    style: TextStyle(fontSize: 13, color: Colors.grey),
-                  ),
-                ],
+                ),
               ),
-            );
-          }
 
-          return ListView.builder(
-            itemCount: subjects.length,
-            itemBuilder: (context, index) {
-              final subject = subjects[index];
+              const SizedBox(height: 4),
 
-              return Card(
-                margin:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 2,
-                child: ListTile(
-                  leading: CircleAvatar(
-                    radius: 22,
-                    backgroundColor: Colors.blue.shade100,
-                    child: Icon(
-                      Icons.school,
-                      color: Colors.blue.shade700,
-                      size: 22,
-                    ),
-                  ),
-                  title: Text(
-                    subject.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                  ),
-                  subtitle: Text(
-                    subject.opis.isEmpty ? 'No description' : subject.opis,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SubjectDetailPage(subject: subject),
-                      ),
-                    );
-                  },
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) async {
-                      if (value == 'edit') {
-                        _showAddEditSubjectDialog(
-                          context: context,
-                          uid: uid,
-                          existing: subject,
-                        );
-                      } else if (value == 'delete') {
-                        final confirmed = await _showDeleteConfirmDialog(
-                          context,
-                          subject.name,
-                        );
-                        if (confirmed == true) {
-                          await _subjectService.deleteSubject(subject.id);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Subject deleted.'),
+              // LIST
+              Expanded(
+                child: filtered.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 32.0, vertical: 8),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.school_outlined,
+                                  size: 56, color: Colors.grey.shade500),
+                              const SizedBox(height: 12),
+                              Text(
+                                subjects.isEmpty
+                                    ? 'No subjects yet'
+                                    : 'No results for "$_searchQuery"',
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                subjects.isEmpty
+                                    ? 'Tap “Add subject” to create your first subject.'
+                                    : 'Try a different name or clear the search.',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) {
+                          final subject = filtered[index];
+                          final initial = subject.name.isNotEmpty
+                              ? subject.name.trim()[0].toUpperCase()
+                              : '?';
+
+                          return _SubjectCard(
+                            subject: subject,
+                            initial: initial,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      SubjectDetailPage(subject: subject),
+                                ),
+                              );
+                            },
+                            onEdit: () => _showAddEditSubjectDialog(
+                              context: context,
+                              uid: uid,
+                              existing: subject,
                             ),
+                            onDelete: () async {
+                              final confirmed = await _showDeleteConfirmDialog(
+                                context,
+                                subject.name,
+                              );
+                              if (confirmed == true) {
+                                await _subjectService.deleteSubject(subject.id);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Subject deleted.'),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
                           );
-                        }
-                      }
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: Text('Edit'),
+                        },
                       ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Text('Delete'),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+              ),
+            ],
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddEditSubjectDialog(context: context, uid: uid),
-        child: const Icon(Icons.add),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, {required int subjectsCount}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.blue.shade600,
+              Colors.blue.shade400,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.menu_book_outlined,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Your subjects",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subjectsCount == 0
+                        ? "Start by adding a subject you study."
+                        : "$subjectsCount subject${subjectsCount == 1 ? '' : 's'} tracked in StudyTracker.",
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -185,30 +273,56 @@ class SubjectsScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
         ),
         title: Text(existing == null ? 'Add subject' : 'Edit subject'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: 'e.g. Mathematics',
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  hintText: 'e.g. Mathematics',
+                  prefixIcon: const Icon(Icons.book_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(width: 1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(width: 2),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: opisController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                hintText: 'Optional – short description',
+              const SizedBox(height: 10),
+              TextField(
+                controller: opisController,
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  hintText: 'Optional – short description',
+                  alignLabelWithHint: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(width: 1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(width: 2),
+                  ),
+                ),
+                maxLines: 3,
+                maxLength: 120,
               ),
-              maxLines: 3,
-              maxLength: 120,
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -285,6 +399,116 @@ class SubjectsScreen extends StatelessWidget {
             child: const Text('Delete'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Jedna kartica za predmet – odvojeno da bude čisto
+class _SubjectCard extends StatelessWidget {
+  const _SubjectCard({
+    required this.subject,
+    required this.initial,
+    required this.onTap,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final Subject subject;
+  final String initial;
+  final VoidCallback onTap;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: LinearGradient(
+              colors: [
+                Colors.white,
+                Colors.blue.shade50,
+              ],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: Colors.white,
+                child: Text(
+                  initial,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.blue.shade700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      subject.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subject.opis.isEmpty ? 'No description' : subject.opis,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    onEdit();
+                  } else if (value == 'delete') {
+                    onDelete();
+                  }
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Text('Edit'),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Text('Delete'),
+                  ),
+                ],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                icon: const Icon(Icons.more_vert),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
