@@ -1,14 +1,36 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/goal.dart';
+import 'notification_service.dart';
 
 class GoalService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   Future<void> addGoal(Goal goal) async {
-    await _db.collection('goals').add(goal.toJson());
+    // 1. Sačuvaj goal u Firestore
+    final docRef = await _db.collection('goals').add(goal.toJson());
+    print("GOAL SAVED: ${docRef.id}");
+
+    // 🔹 Unikatan ID za notifikaciju (izbegavamo hashCode probleme)
+    final notifId = DateTime.now().millisecondsSinceEpoch.remainder(1000000);
+    final reminderTime = DateTime.now().add(const Duration(seconds: 10));
+    print("SCHEDULING NOTIF AT: $reminderTime, id=$notifId");
+
+    // 2. Instant notifikacija da znamo da se addGoal pozvao
+    await NotificationService().showInstantNotification(
+      title: 'Goal created',
+      body: 'Goal created — reminder scheduled.',
+      id: notifId,
+    );
+
+    // 3. Zakazana notifikacija za 10 sekundi (test)
+    await NotificationService().scheduleNotification(
+      id: notifId + 1,
+      title: 'Goal reminder (test)',
+      body: 'This is a test reminder 10 seconds after goal creation.',
+      scheduledTime: reminderTime,
+    );
   }
 
-  // ostavi ako ti treba
   Stream<List<Goal>> getGoalsForUser(String userId) {
     return _db
         .collection('goals')
