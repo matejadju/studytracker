@@ -313,18 +313,19 @@ class _TimerCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
-          colors: isDark
-              ? [
-                  primary.withOpacity(0.95),
-                  secondary.withOpacity(0.9),
-                ]
-              : [
-                  primary,
-                  primary.withOpacity(0.8),
-                ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+            colors: isDark
+                ? [
+                    primary.withOpacity(0.95),
+                    secondary.withOpacity(0.9),
+                  ]
+                : [
+                    const Color(0xFF6DB8FF), 
+                    const Color(0xFF3FA9F5),
+                  ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+
         boxShadow: [
           BoxShadow(
             color: primary.withOpacity(0.4),

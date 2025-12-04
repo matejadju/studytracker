@@ -6,27 +6,57 @@ import '../models/goal.dart';
 import '../services/goal_service.dart';
 
 class SubjectDetailPage extends StatelessWidget {
-  SubjectDetailPage({super.key, required this.subject});
+  SubjectDetailPage({
+    super.key,
+    required this.subject,
+    required this.onToggleTheme,
+    required this.isDarkMode,
+  });
 
   final Subject subject;
   final GoalService _goalService = GoalService();
+
+  final VoidCallback onToggleTheme;
+  final bool isDarkMode;
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser!;
     final uid = user.uid;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor:
+          isDark ? theme.colorScheme.surface : Colors.grey.shade100,
       appBar: AppBar(
         title: Text(subject.name),
         centerTitle: true,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
+            tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
+            onPressed: onToggleTheme,
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddGoalBottomSheet(context, uid),
-        icon: const Icon(Icons.flag_outlined),
-        label: const Text('Add goal'),
+      floatingActionButton: Theme(
+        // da FAB ne potamni boju u M3
+        data: Theme.of(context).copyWith(useMaterial3: false),
+        child: FloatingActionButton.extended(
+          onPressed: () => _showAddGoalBottomSheet(context, uid),
+          icon: const Icon(Icons.flag_outlined),
+          label: const Text('Add goal'),
+          backgroundColor:
+              isDark ? theme.colorScheme.primary : const Color(0xFF6DB8FF),
+          foregroundColor: Colors.white,
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -36,7 +66,8 @@ class SubjectDetailPage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Card(
-              elevation: 3,
+              elevation: isDark ? 1 : 3,
+              color: theme.cardColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
               ),
@@ -47,10 +78,11 @@ class SubjectDetailPage extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 26,
-                      backgroundColor: Colors.blue.shade50,
+                      backgroundColor:
+                          theme.colorScheme.primary.withOpacity(0.12),
                       child: Icon(
                         Icons.school_outlined,
-                        color: Colors.blue.shade700,
+                        color: theme.colorScheme.primary,
                         size: 26,
                       ),
                     ),
@@ -61,8 +93,7 @@ class SubjectDetailPage extends StatelessWidget {
                         children: [
                           Text(
                             subject.name,
-                            style: const TextStyle(
-                              fontSize: 18,
+                            style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -73,9 +104,9 @@ class SubjectDetailPage extends StatelessWidget {
                                 : subject.opis,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.textTheme.bodySmall?.color
+                                  ?.withOpacity(0.7),
                             ),
                           ),
                         ],
@@ -101,7 +132,7 @@ class SubjectDetailPage extends StatelessWidget {
                       child: Text(
                         'Error while loading goals:\n${snapshot.error}',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 13),
+                        style: theme.textTheme.bodySmall,
                       ),
                     ),
                   );
@@ -118,21 +149,24 @@ class SubjectDetailPage extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 32.0),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: const [
+                        children: [
                           Icon(Icons.flag_outlined,
-                              size: 52, color: Colors.grey),
-                          SizedBox(height: 12),
+                              size: 52,
+                              color: theme.iconTheme.color?.withOpacity(0.5)),
+                          const SizedBox(height: 12),
                           Text(
                             'No goals yet',
-                            style: TextStyle(
-                              fontSize: 17,
+                            style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
                             'Tap the "Add goal" button to create your first goal for this subject.',
-                            style: TextStyle(fontSize: 13, color: Colors.grey),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.textTheme.bodySmall?.color
+                                  ?.withOpacity(0.7),
+                            ),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -143,7 +177,11 @@ class SubjectDetailPage extends StatelessWidget {
 
                 return ListView.builder(
                   padding: const EdgeInsets.only(
-                      top: 8, bottom: 96, left: 16, right: 16),
+                    top: 8,
+                    bottom: 96,
+                    left: 16,
+                    right: 16,
+                  ),
                   itemCount: goals.length,
                   itemBuilder: (context, index) {
                     final goal = goals[index];
@@ -157,10 +195,11 @@ class SubjectDetailPage extends StatelessWidget {
 
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 6),
+                      color: theme.cardColor,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      elevation: 2,
+                      elevation: isDark ? 1 : 2,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(16),
                         onTap: () async {
@@ -182,7 +221,6 @@ class SubjectDetailPage extends StatelessWidget {
                               horizontal: 12, vertical: 10),
                           child: Row(
                             children: [
-                              // checkbox
                               Checkbox(
                                 value: goal.isCompleted,
                                 onChanged: (value) async {
@@ -211,7 +249,8 @@ class SubjectDetailPage extends StatelessWidget {
                                       children: [
                                         Text(
                                           '${goal.targetMinutes} min',
-                                          style: const TextStyle(
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -223,9 +262,12 @@ class SubjectDetailPage extends StatelessWidget {
                                             vertical: 4,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: periodLabel == 'Weekly'
-                                                ? Colors.blue.shade50
-                                                : Colors.deepPurple.shade50,
+                                            color: (periodLabel == 'Weekly'
+                                                    ? theme
+                                                        .colorScheme.primary
+                                                    : theme
+                                                        .colorScheme.secondary)
+                                                .withOpacity(0.12),
                                             borderRadius:
                                                 BorderRadius.circular(12),
                                           ),
@@ -235,8 +277,9 @@ class SubjectDetailPage extends StatelessWidget {
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
                                               color: periodLabel == 'Weekly'
-                                                  ? Colors.blue.shade700
-                                                  : Colors.deepPurple.shade700,
+                                                  ? theme.colorScheme.primary
+                                                  : theme
+                                                      .colorScheme.secondary,
                                             ),
                                           ),
                                         ),
@@ -245,16 +288,16 @@ class SubjectDetailPage extends StatelessWidget {
                                     const SizedBox(height: 4),
                                     Text(
                                       dateRange,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                              color: theme
+                                                  .textTheme.bodySmall?.color
+                                                  ?.withOpacity(0.7)),
                                     ),
                                   ],
                                 ),
                               ),
 
-                              // delete icon
                               IconButton(
                                 icon: const Icon(
                                   Icons.delete_outline,
@@ -290,7 +333,8 @@ class SubjectDetailPage extends StatelessWidget {
                                     await _goalService.deleteGoal(goal.id);
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                          content: Text("Goal deleted.")),
+                                        content: Text("Goal deleted."),
+                                      ),
                                     );
                                   }
                                 },
@@ -310,7 +354,8 @@ class SubjectDetailPage extends StatelessWidget {
     );
   }
 
-  /// Popup za nevalidan unos (da se vidi iznad tastature).
+  // -------- bottom sheet za dodavanje goal-a (dark friendly) --------
+
   Future<void> _showValidationDialog(BuildContext context, String message) {
     return showDialog(
       context: context,
@@ -332,7 +377,7 @@ class SubjectDetailPage extends StatelessWidget {
 
   void _showAddGoalBottomSheet(BuildContext context, String uid) {
     final minutesController = TextEditingController();
-    String selectedPeriod = 'weekly'; // default
+    String selectedPeriod = 'weekly';
     DateTime startDate = DateTime.now();
 
     showModalBottomSheet(
@@ -340,6 +385,9 @@ class SubjectDetailPage extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
+        final theme = Theme.of(ctx);
+        final isDark = theme.brightness == Brightness.dark;
+
         DateTime computeEndDate(String period) {
           if (period == 'monthly') {
             return startDate.add(const Duration(days: 30));
@@ -362,13 +410,15 @@ class SubjectDetailPage extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark
+                      ? theme.colorScheme.surface
+                      : theme.colorScheme.background,
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [
+                  boxShadow: [
                     BoxShadow(
                       blurRadius: 18,
-                      offset: Offset(0, -4),
-                      color: Colors.black12,
+                      offset: const Offset(0, -4),
+                      color: Colors.black.withOpacity(0.25),
                     )
                   ],
                 ),
@@ -380,27 +430,25 @@ class SubjectDetailPage extends StatelessWidget {
                       height: 4,
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
+                        color: Colors.grey.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     Text(
                       'Add goal for ${subject.name}',
-                      style: const TextStyle(
-                        fontSize: 18,
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 12),
 
-                    // Period type – segmented buttons
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Period type',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade700,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.textTheme.bodySmall?.color
+                              ?.withOpacity(0.8),
                         ),
                       ),
                     ),
@@ -411,6 +459,8 @@ class SubjectDetailPage extends StatelessWidget {
                           child: ChoiceChip(
                             label: const Text('Weekly'),
                             selected: selectedPeriod == 'weekly',
+                            selectedColor:
+                                theme.colorScheme.primary.withOpacity(0.15),
                             onSelected: (_) {
                               setState(() => selectedPeriod = 'weekly');
                             },
@@ -421,6 +471,8 @@ class SubjectDetailPage extends StatelessWidget {
                           child: ChoiceChip(
                             label: const Text('Monthly'),
                             selected: selectedPeriod == 'monthly',
+                            selectedColor:
+                                theme.colorScheme.secondary.withOpacity(0.15),
                             onSelected: (_) {
                               setState(() => selectedPeriod = 'monthly');
                             },
@@ -431,7 +483,6 @@ class SubjectDetailPage extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // target minutes
                     TextField(
                       controller: minutesController,
                       keyboardType: TextInputType.number,
@@ -450,7 +501,9 @@ class SubjectDetailPage extends StatelessWidget {
                           borderSide: const BorderSide(width: 2),
                         ),
                         filled: true,
-                        fillColor: Colors.grey.shade100,
+                        fillColor: isDark
+                            ? theme.colorScheme.surfaceVariant
+                            : Colors.grey.shade100,
                       ),
                     ),
 
@@ -460,9 +513,9 @@ class SubjectDetailPage extends StatelessWidget {
                       child: Text(
                         'From ${startDate.toLocal().toString().split(' ').first} '
                         'to ${endDate.toLocal().toString().split(' ').first}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.textTheme.bodySmall?.color
+                              ?.withOpacity(0.7),
                         ),
                       ),
                     ),

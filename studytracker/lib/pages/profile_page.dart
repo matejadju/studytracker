@@ -46,6 +46,10 @@ class _ProfilePageState extends State<ProfilePage> {
     final user = FirebaseAuth.instance.currentUser;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final primary = theme.colorScheme.primary;
+    final secondary = theme.colorScheme.secondary;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.grey[700];
 
     if (user == null) {
       return const Scaffold(
@@ -105,7 +109,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
         return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
-          // AppBar ovde nam ne treba, već ga imamo u HomeScreen-u
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -116,10 +119,15 @@ class _ProfilePageState extends State<ProfilePage> {
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      Colors.blue.shade600,
-                      Colors.blue.shade400,
-                    ],
+                    colors: isDark
+                        ? [
+                            primary.withOpacity(0.95),
+                            secondary.withOpacity(0.9),
+                          ]
+                        : const [
+                            Color(0xFF6DB8FF),
+                            Color(0xFF3FA9F5),
+                          ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -195,6 +203,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 "Account details",
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
+                                  color: textColor,
                                 ),
                               ),
                               const SizedBox(height: 12),
@@ -241,24 +250,31 @@ class _ProfilePageState extends State<ProfilePage> {
                                 "StudyTracker overview",
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
+                                  color: textColor,
                                 ),
                               ),
                               const SizedBox(height: 12),
                               Row(
                                 children: [
-                                  const Icon(Icons.timer, size: 20),
+                                  Icon(
+                                    Icons.timer,
+                                    size: 20,
+                                    color: textColor,
+                                  ),
                                   const SizedBox(width: 8),
                                   Text(
                                     "Total study time:",
-                                    style: theme.textTheme.bodyMedium,
+                                    style:
+                                        theme.textTheme.bodyMedium?.copyWith(
+                                      color: textColor,
+                                    ),
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
                                     "coming soon",
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       fontStyle: FontStyle.italic,
-                                      color: theme.colorScheme.onSurface
-                                          .withOpacity(0.6),
+                                      color: subTextColor,
                                     ),
                                   ),
                                 ],
@@ -266,19 +282,25 @@ class _ProfilePageState extends State<ProfilePage> {
                               const SizedBox(height: 6),
                               Row(
                                 children: [
-                                  const Icon(Icons.menu_book_outlined, size: 20),
+                                  Icon(
+                                    Icons.menu_book_outlined,
+                                    size: 20,
+                                    color: textColor,
+                                  ),
                                   const SizedBox(width: 8),
                                   Text(
                                     "Subjects tracked:",
-                                    style: theme.textTheme.bodyMedium,
+                                    style:
+                                        theme.textTheme.bodyMedium?.copyWith(
+                                      color: textColor,
+                                    ),
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
                                     "coming soon",
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       fontStyle: FontStyle.italic,
-                                      color: theme.colorScheme.onSurface
-                                          .withOpacity(0.6),
+                                      color: subTextColor,
                                     ),
                                   ),
                                 ],
@@ -400,7 +422,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.dispose();
   }
 
-  InputDecoration _inputDecoration(BuildContext context, String label, IconData icon) {
+  InputDecoration _inputDecoration(
+      BuildContext context, String label, IconData icon) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -609,10 +632,14 @@ Widget _infoRow({
   required String label,
   required String value,
 }) {
+  final isDark = theme.brightness == Brightness.dark;
+  final textColor = isDark ? Colors.white : Colors.black87;
+  final subTextColor = isDark ? Colors.white70 : Colors.grey[700];
+
   return Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Icon(icon, size: 20),
+      Icon(icon, size: 20, color: textColor),
       const SizedBox(width: 10),
       Expanded(
         child: Column(
@@ -621,7 +648,7 @@ Widget _infoRow({
             Text(
               label,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: subTextColor,
               ),
             ),
             const SizedBox(height: 2),
@@ -629,6 +656,7 @@ Widget _infoRow({
               value.isEmpty ? "-" : value,
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
+                color: textColor,
               ),
             ),
           ],
