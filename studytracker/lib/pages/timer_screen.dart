@@ -143,6 +143,8 @@ class _TimerScreenState extends State<TimerScreen> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     if (user == null) {
       return const Scaffold(
@@ -157,7 +159,8 @@ class _TimerScreenState extends State<TimerScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor:
+          isDark ? theme.colorScheme.surface : Colors.grey.shade100,
       appBar: AppBar(
         title: const Text('Focus timer'),
         centerTitle: true,
@@ -168,7 +171,6 @@ class _TimerScreenState extends State<TimerScreen> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              // SUBJECT + INFO CARD
               _SubjectCard(
                 subjects: _subjects,
                 selectedSubjectId: _selectedSubjectId,
@@ -178,10 +180,7 @@ class _TimerScreenState extends State<TimerScreen> {
                   });
                 },
               ),
-
               const SizedBox(height: 16),
-
-              // TIMER CARD (lepši izgled)
               _TimerCard(
                 elapsedSeconds: _elapsedSeconds,
                 isRunning: _isRunning,
@@ -189,10 +188,7 @@ class _TimerScreenState extends State<TimerScreen> {
                 onPause: _pauseTimer,
                 onFinish: _elapsedSeconds.value > 0 ? _finishTimer : null,
               ),
-
               const SizedBox(height: 16),
-
-              // HISTORY
               Expanded(
                 child: _selectedSubjectId == null
                     ? const Center(
@@ -231,30 +227,37 @@ class _SubjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark
+            ? theme.colorScheme.surfaceVariant
+            : theme.cardColor, // umesto čisto white
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: isDark
+            ? [] // u dark modu bez jake senke
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: theme.colorScheme.primary.withOpacity(0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               Icons.school,
-              color: Colors.blue.shade700,
+              color: theme.colorScheme.primary,
             ),
           ),
           const SizedBox(width: 12),
@@ -300,22 +303,31 @@ class _TimerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final primary = theme.colorScheme.primary;
+    final secondary = theme.colorScheme.secondary;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
-          colors: [
-            Colors.blue.shade600,
-            Colors.blue.shade400,
-          ],
+          colors: isDark
+              ? [
+                  primary.withOpacity(0.95),
+                  secondary.withOpacity(0.9),
+                ]
+              : [
+                  primary,
+                  primary.withOpacity(0.8),
+                ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.shade200.withOpacity(0.5),
+            color: primary.withOpacity(0.4),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -323,10 +335,10 @@ class _TimerCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             "Focus session",
             style: TextStyle(
-              color: Colors.white70,
+              color: theme.colorScheme.onPrimary.withOpacity(0.8),
               fontSize: 14,
             ),
           ),
@@ -354,8 +366,8 @@ class _TimerCard extends StatelessWidget {
                   '${h.toString().padLeft(2, '0')} : '
                   '${m.toString().padLeft(2, '0')} : '
                   '${s.toString().padLeft(2, '0')}',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: theme.colorScheme.onPrimary,
                     fontSize: 28,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 1.5,
@@ -372,16 +384,16 @@ class _TimerCard extends StatelessWidget {
                 icon: Icons.play_arrow_rounded,
                 label: "Start",
                 onPressed: isRunning ? null : onStart,
-                background: Colors.white,
-                foreground: Colors.blue.shade700,
+                background: theme.colorScheme.onPrimary,
+                foreground: theme.colorScheme.primary,
               ),
               const SizedBox(width: 12),
               _TimerActionButton(
                 icon: Icons.pause_rounded,
                 label: "Pause",
                 onPressed: isRunning ? onPause : null,
-                background: Colors.white.withOpacity(0.12),
-                foreground: Colors.white,
+                background: Colors.white.withOpacity(0.15),
+                foreground: theme.colorScheme.onPrimary,
               ),
               const SizedBox(width: 12),
               _TimerActionButton(
@@ -389,11 +401,11 @@ class _TimerCard extends StatelessWidget {
                 label: "Finish",
                 onPressed: (elapsedSeconds.value > 0 && onFinish != null)
                     ? () {
-                        onFinish!(); // pozovemo async funkciju, ali ne vraćamo ništa
+                        onFinish!();
                       }
                     : null,
-                background: Colors.white.withOpacity(0.12),
-                foreground: Colors.white,
+                background: Colors.white.withOpacity(0.15),
+                foreground: theme.colorScheme.onPrimary,
               ),
             ],
           ),
@@ -401,7 +413,7 @@ class _TimerCard extends StatelessWidget {
           Text(
             isRunning ? "Timer is running..." : "Tap Start to begin studying.",
             style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.white70,
+              color: theme.colorScheme.onPrimary.withOpacity(0.8),
             ),
           ),
         ],

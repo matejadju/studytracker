@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'register_page.dart';
-import 'profile_page.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({
+    super.key,
+    required this.onToggleTheme,
+    required this.isDarkMode,
+  });
+
+  final VoidCallback onToggleTheme;
+  final bool isDarkMode;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -17,40 +22,45 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
 
   Future<void> _login() async {
-    setState(() => _isLoading = true);
-    try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
+  setState(() => _isLoading = true);
+  try {
+    await FirebaseAuth.instance.signInWithEmailAndPassword(
+      email: emailController.text.trim(),
+      password: passwordController.text.trim(),
+    );
 
-      if (!mounted) return;
+    if (!mounted) return;
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const ProfilePage()),
-      );
-      ;
-    } on FirebaseAuthException catch (e) {
-      String message = 'Error while logging in.';
-      if (e.code == 'user-not-found') {
-        message = 'No user found with this email.';
-      } else if (e.code == 'wrong-password') {
-        message = 'Incorrect password.';
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unknown error: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    // samo pokažemo poruku – AuthGate će sam prebaciti na HomeScreen
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Login successful.')),
+    );
+  } on FirebaseAuthException catch (e) {
+    String message = 'Error while logging in.';
+    if (e.code == 'user-not-found') {
+      message = 'No user found with this email.';
+    } else if (e.code == 'wrong-password') {
+      message = 'Incorrect password.';
     }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Unknown error: $e')),
+    );
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
 
-  InputDecoration _inputDecoration(String label, {IconData? icon}) {
+
+
+  InputDecoration _inputDecoration(BuildContext context, String label,
+      {IconData? icon}) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return InputDecoration(
       labelText: label,
       prefixIcon: icon != null ? Icon(icon) : null,
@@ -66,14 +76,34 @@ class _LoginPageState extends State<LoginPage> {
         borderSide: const BorderSide(width: 2),
       ),
       filled: true,
-      fillColor: Colors.grey.shade100,
+      fillColor: isDark
+          ? theme.colorScheme.surfaceVariant
+          : Colors.grey.shade100,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: Icon(
+              widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+            ),
+            tooltip: widget.isDarkMode
+                ? 'Switch to light mode'
+                : 'Switch to dark mode',
+            onPressed: widget.onToggleTheme,
+          ),
+        ],
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -117,6 +147,7 @@ class _LoginPageState extends State<LoginPage> {
                       controller: emailController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: _inputDecoration(
+                        context,
                         "Email",
                         icon: Icons.email_outlined,
                       ),
@@ -128,6 +159,7 @@ class _LoginPageState extends State<LoginPage> {
                       controller: passwordController,
                       obscureText: true,
                       decoration: _inputDecoration(
+                        context,
                         "Password",
                         icon: Icons.lock_outline,
                       ),
@@ -168,10 +200,14 @@ class _LoginPageState extends State<LoginPage> {
 
                     TextButton(
                       onPressed: () {
-                        Navigator.pushReplacement(
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const RegisterPage()),
+                            builder: (_) => RegisterPage(
+                              onToggleTheme: widget.onToggleTheme,
+                              isDarkMode: widget.isDarkMode,
+                            ),
+                          ),
                         );
                       },
                       child: const Text(
@@ -179,6 +215,7 @@ class _LoginPageState extends State<LoginPage> {
                         style: TextStyle(fontSize: 13),
                       ),
                     ),
+
                   ],
                 ),
               ),

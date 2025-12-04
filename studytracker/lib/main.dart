@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'services/notification_service.dart';
 
-
 import 'pages/login_page.dart';
 import 'pages/home_screen.dart';
 
@@ -15,25 +14,88 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.light;
+
+  int _selectedIndex = 0; // <- NOVO
+
+  void _toggleTheme() {
+    setState(() {
+      _themeMode =
+          _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    });
+  }
+
+  void _onTabChange(int index) {     // <- NOVO
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'StudyTracker',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
+    final lightTheme = ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.blue,
+        brightness: Brightness.light,
       ),
-      home: const AuthGate(),
+      scaffoldBackgroundColor: Colors.grey.shade100,
     );
+
+    final darkTheme = ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.blue,
+        brightness: Brightness.dark,
+      ),
+      scaffoldBackgroundColor: const Color(0xFF101014),
+      cardColor: const Color(0xFF1E1E24),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFF18181E),
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+      ),
+    );
+
+
+    return MaterialApp(
+  title: 'StudyTracker',
+  debugShowCheckedModeBanner: false,
+  theme: lightTheme,
+  darkTheme: darkTheme,
+  themeMode: _themeMode,
+  home: AuthGate(
+    onToggleTheme: _toggleTheme,
+    isDarkMode: _themeMode == ThemeMode.dark,
+    selectedIndex: _selectedIndex,       // <- NOVO
+    onTabChange: _onTabChange,           // <- NOVO
+  ),
+);
   }
 }
 
 class AuthGate extends StatelessWidget {
-  const AuthGate({super.key});
+  const AuthGate({
+    super.key,
+    required this.onToggleTheme,
+    required this.isDarkMode,
+    required this.selectedIndex,   // <- NOVO
+    required this.onTabChange,     // <- NOVO
+  });
+
+  final VoidCallback onToggleTheme;
+  final bool isDarkMode;
+
+  final int selectedIndex;               // <- NOVO
+  final ValueChanged<int> onTabChange;
 
   @override
   Widget build(BuildContext context) {
@@ -47,10 +109,20 @@ class AuthGate extends StatelessWidget {
         }
 
         if (snapshot.hasData) {
-          return const HomeScreen();
+          return HomeScreen(
+            onToggleTheme: onToggleTheme,
+            isDarkMode: isDarkMode,
+            selectedIndex: selectedIndex,     // <- NOVO
+            onTabChange: onTabChange,         // <- NOVO
+          );
         }
 
-        return const LoginPage();
+        // nije ulogovan → login (za sada bez togla, može i tu kasnije)
+        return LoginPage(
+          onToggleTheme: onToggleTheme,
+          isDarkMode: isDarkMode,
+        );
+
       },
     );
   }

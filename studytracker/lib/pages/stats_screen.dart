@@ -77,6 +77,7 @@ class _StatsScreenState extends State<StatsScreen> {
     final uid = user.uid;
 
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     if (_loadingSubjects) {
       return const Scaffold(
@@ -106,13 +107,14 @@ class _StatsScreenState extends State<StatsScreen> {
     );
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      // umesto fiksne svetle pozadine
+      backgroundColor:
+          isDark ? theme.colorScheme.surface : Colors.grey.shade100,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: Column(
             children: [
-              // Mali "header" unutar taba
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -128,7 +130,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 child: Text(
                   'Check how much you studied for each subject.',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
               ),
@@ -176,7 +178,6 @@ class _StatsScreenState extends State<StatsScreen> {
 
               const SizedBox(height: 16),
 
-              // STREAM – koristi index: subjectId + userId + startTime
               Expanded(
                 child: StreamBuilder<List<StudySession>>(
                   stream: _sessionService.getSessionsForSubject(
@@ -207,7 +208,6 @@ class _StatsScreenState extends State<StatsScreen> {
                       );
                     }
 
-                    // filtriraj po periodu (weekly / monthly)
                     final now = DateTime.now();
                     final from = _selectedPeriod == StatsPeriod.weekly
                         ? now.subtract(const Duration(days: 7))
@@ -228,7 +228,6 @@ class _StatsScreenState extends State<StatsScreen> {
                       );
                     }
 
-                    // SUMMARY PODACI ZA IZABRANI PERIOD
                     final totalMinutes = sessions.fold<int>(
                         0, (sum, s) => sum + s.durationMinutes);
                     final avgMinutes = (totalMinutes / sessions.length)
@@ -238,11 +237,9 @@ class _StatsScreenState extends State<StatsScreen> {
                       (a, b) => a.durationMinutes >= b.durationMinutes ? a : b,
                     );
 
-                    // 🔹 AGREGACIJA PO DANIMA U NEDELJI (0..6)
                     final List<int> minutesPerWeekday =
                         List<int>.filled(7, 0, growable: false);
                     for (final s in sessions) {
-                      // DateTime.weekday: Mon=1 ... Sun=7
                       final index = s.startTime.weekday - 1;
                       minutesPerWeekday[index] += s.durationMinutes;
                     }
@@ -290,7 +287,8 @@ class _StatsScreenState extends State<StatsScreen> {
                                     ? 'Last 7 days'
                                     : 'Last 30 days',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey[600],
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.6),
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -323,7 +321,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
                         const SizedBox(height: 16),
 
-                        // BAR CHART – WEEKDAY DISTRIBUTION
+                        // BAR CHART
                         _SectionCard(
                           child: SizedBox(
                             height: 240,
@@ -341,8 +339,10 @@ class _StatsScreenState extends State<StatsScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   'Minutes per weekday',
-                                  style: theme.textTheme.bodySmall
-                                      ?.copyWith(color: Colors.grey[600]),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.6),
+                                  ),
                                 ),
                                 const SizedBox(height: 12),
                                 Expanded(
@@ -382,9 +382,8 @@ class _StatsScreenState extends State<StatsScreen> {
                                                     top: 4),
                                                 child: Text(
                                                   weekdayLabels[index],
-                                                  style: const TextStyle(
-                                                    fontSize: 11,
-                                                  ),
+                                                  style: theme
+                                                      .textTheme.bodySmall,
                                                 ),
                                               );
                                             },
@@ -416,7 +415,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
                         const SizedBox(height: 16),
 
-                        // PIE CHART – PROCENAT VREMENA PO DANIMA
+                        // PIE CHART
                         if (totalWeekdayMinutes > 0)
                           _SectionCard(
                             child: SizedBox(
@@ -436,8 +435,10 @@ class _StatsScreenState extends State<StatsScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     'Share of total study time',
-                                    style: theme.textTheme.bodySmall
-                                        ?.copyWith(color: Colors.grey[600]),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withOpacity(0.6),
+                                    ),
                                   ),
                                   const SizedBox(height: 12),
                                   Expanded(
@@ -479,7 +480,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
                         const SizedBox(height: 16),
 
-                        // HISTORY LIST (za filtrirani period)
+                        // HISTORY LIST
                         _SectionCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -511,7 +512,11 @@ class _StatsScreenState extends State<StatsScreen> {
                                     subtitle: Text(
                                       '${_formatDateTime(s.startTime)} → ${_formatDateTime(s.endTime)}',
                                       style: theme.textTheme.bodySmall
-                                          ?.copyWith(color: Colors.grey[600]),
+                                          ?.copyWith(
+                                        color: theme
+                                            .colorScheme.onSurface
+                                            .withOpacity(0.6),
+                                      ),
                                     ),
                                   );
                                 },
@@ -543,26 +548,42 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: padding,
       margin: const EdgeInsets.symmetric(vertical: 2),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            Colors.grey.shade50,
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        color: isDark
+            ? theme.colorScheme.surfaceVariant
+            : null, // u light modu koristimo gradient ispod
+        gradient: isDark
+            ? null
+            : LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  Colors.grey.shade50,
+                ],
+              ),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.25),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
       ),
       child: child,
     );
@@ -587,7 +608,7 @@ class _SummaryItem extends StatelessWidget {
         Text(
           label,
           style: theme.textTheme.bodySmall?.copyWith(
-            color: Colors.grey[600],
+            color: theme.colorScheme.onSurface.withOpacity(0.6),
           ),
         ),
         const SizedBox(height: 2),
@@ -613,18 +634,25 @@ class _PeriodToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isWeekly = period == StatsPeriod.weekly;
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: isDark
+            ? theme.colorScheme.surfaceVariant
+            : Colors.white, // u light belo, u dark surface
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Row(
         children: [
@@ -664,14 +692,18 @@ class _PeriodChip extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? theme.colorScheme.primary.withOpacity(0.12) : null,
+          color: selected
+              ? theme.colorScheme.primary.withOpacity(0.16)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
           text,
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            color: selected ? theme.colorScheme.primary : Colors.grey[700],
+            color: selected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurface.withOpacity(0.7),
           ),
         ),
       ),
