@@ -6,11 +6,19 @@ import '../services/subject_service.dart';
 import 'subject_detail_page.dart';
 
 class SubjectsScreen extends StatefulWidget {
-  const SubjectsScreen({super.key});
+  const SubjectsScreen({
+    super.key,
+    required this.onToggleTheme,
+    required this.isDarkMode,
+  });
+
+  final VoidCallback onToggleTheme;
+  final bool isDarkMode;
 
   @override
   State<SubjectsScreen> createState() => _SubjectsScreenState();
 }
+
 
 class _SubjectsScreenState extends State<SubjectsScreen> {
   final SubjectService _subjectService = SubjectService();
@@ -19,6 +27,9 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (user == null) {
       return const Scaffold(
         body: Center(child: Text('No user logged in')),
@@ -27,7 +38,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
     final uid = user.uid;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
         title: const Text('Subjects'),
@@ -37,7 +48,15 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
         onPressed: () => _showAddEditSubjectDialog(context: context, uid: uid),
         icon: const Icon(Icons.add),
         label: const Text('Add subject'),
+        backgroundColor: const Color.fromARGB(255, 92, 170, 244),  
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        clipBehavior: Clip.antiAlias,
       ),
+
       body: StreamBuilder<List<Subject>>(
         stream: _subjectService.getSubjects(uid),
         builder: (context, snapshot) {
@@ -82,7 +101,9 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                       borderSide: const BorderSide(width: 2),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: isDark
+                        ? theme.colorScheme.surfaceVariant
+                        : Colors.white,
                   ),
                 ),
               ),
@@ -100,14 +121,15 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.school_outlined,
-                                  size: 56, color: Colors.grey.shade500),
+                                  size: 56,
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.5)),
                               const SizedBox(height: 12),
                               Text(
                                 subjects.isEmpty
                                     ? 'No subjects yet'
                                     : 'No results for "$_searchQuery"',
-                                style: const TextStyle(
-                                  fontSize: 17,
+                                style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -116,9 +138,9 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                                 subjects.isEmpty
                                     ? 'Tap “Add subject” to create your first subject.'
                                     : 'Try a different name or clear the search.',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.6),
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -142,10 +164,14 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) =>
-                                      SubjectDetailPage(subject: subject),
+                                  builder: (_) => SubjectDetailPage(
+                                    subject: subject,
+                                    onToggleTheme: widget.onToggleTheme,
+                                    isDarkMode: widget.isDarkMode,
+                                  ),
                                 ),
                               );
+
                             },
                             onEdit: () => _showAddEditSubjectDialog(
                               context: context,
@@ -180,6 +206,11 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
   }
 
   Widget _buildHeader(BuildContext context, {required int subjectsCount}) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primary = theme.colorScheme.primary;
+    final secondary = theme.colorScheme.secondary;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Container(
@@ -187,10 +218,15 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Colors.blue.shade600,
-              Colors.blue.shade400,
-            ],
+            colors: isDark
+                ? [
+                    primary.withOpacity(0.95),
+                    secondary.withOpacity(0.9),
+                  ]
+                : const [
+                    Color(0xFF6DB8FF),
+                    Color(0xFF3FA9F5),
+                  ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -241,7 +277,6 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
     );
   }
 
-  // Popup za nevalidan Name
   Future<void> _showNameValidationDialog(BuildContext context) {
     return showDialog(
       context: context,
@@ -271,104 +306,117 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
 
     await showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Text(existing == null ? 'Add subject' : 'Edit subject'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: 'Name',
-                  hintText: 'e.g. Mathematics',
-                  prefixIcon: const Icon(Icons.book_outlined),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(width: 1),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(width: 2),
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        final isDark = theme.brightness == Brightness.dark;
+
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(existing == null ? 'Add subject' : 'Edit subject'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Name',
+                    hintText: 'e.g. Mathematics',
+                    prefixIcon: const Icon(Icons.book_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(width: 2),
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? theme.colorScheme.surfaceVariant
+                        : Colors.white,
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: opisController,
-                decoration: InputDecoration(
-                  labelText: 'Description',
-                  hintText: 'Optional – short description',
-                  alignLabelWithHint: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: opisController,
+                  decoration: InputDecoration(
+                    labelText: 'Description',
+                    hintText: 'Optional – short description',
+                    alignLabelWithHint: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(width: 2),
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? theme.colorScheme.surfaceVariant
+                        : Colors.white,
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(width: 1),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(width: 2),
-                  ),
+                  maxLines: 3,
+                  maxLength: 120,
                 ),
-                maxLines: 3,
-                maxLength: 120,
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              final opis = opisController.text.trim();
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final name = nameController.text.trim();
+                final opis = opisController.text.trim();
 
-              if (name.isEmpty) {
-                await _showNameValidationDialog(context);
-                return;
-              }
+                if (name.isEmpty) {
+                  await _showNameValidationDialog(context);
+                  return;
+                }
 
-              if (existing == null) {
-                final s = Subject(
-                  id: '',
-                  name: name,
-                  opis: opis,
-                  userId: uid,
-                );
-                await _subjectService.addSubject(s);
-                if (ctx.mounted) Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Subject added.')),
-                );
-              } else {
-                final s = Subject(
-                  id: existing.id,
-                  name: name,
-                  opis: opis,
-                  userId: uid,
-                );
-                await _subjectService.updateSubject(existing.id, s);
-                if (ctx.mounted) Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Subject updated.')),
-                );
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+                if (existing == null) {
+                  final s = Subject(
+                    id: '',
+                    name: name,
+                    opis: opis,
+                    userId: uid,
+                  );
+                  await _subjectService.addSubject(s);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Subject added.')),
+                  );
+                } else {
+                  final s = Subject(
+                    id: existing.id,
+                    name: name,
+                    opis: opis,
+                    userId: uid,
+                  );
+                  await _subjectService.updateSubject(existing.id, s);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Subject updated.')),
+                  );
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -404,7 +452,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
   }
 }
 
-/// Jedna kartica za predmet – odvojeno da bude čisto
+/// Jedna kartica za predmet
 class _SubjectCard extends StatelessWidget {
   const _SubjectCard({
     required this.subject,
@@ -422,8 +470,12 @@ class _SubjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Card(
-      elevation: 3,
+      color: isDark ? theme.cardColor : Colors.white,
+      elevation: isDark ? 1 : 3,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
       ),
@@ -433,27 +485,38 @@ class _SubjectCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            gradient: LinearGradient(
-              colors: [
-                Colors.white,
-                Colors.blue.shade50,
-              ],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
+            gradient: isDark
+                ? LinearGradient(
+                    colors: [
+                      theme.colorScheme.surface,
+                      theme.colorScheme.surfaceVariant,
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  )
+                : const LinearGradient(
+                    colors: [
+                      Colors.white,
+                      Color(0xFFE5F2FF), // blaga svetla plava
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: Colors.white,
+                backgroundColor: isDark
+                    ? theme.colorScheme.primary.withOpacity(0.15)
+                    : Colors.white,
                 child: Text(
                   initial,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: Colors.blue.shade700,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
               ),
@@ -464,9 +527,8 @@ class _SubjectCard extends StatelessWidget {
                   children: [
                     Text(
                       subject.name,
-                      style: const TextStyle(
+                      style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -474,9 +536,8 @@ class _SubjectCard extends StatelessWidget {
                       subject.opis.isEmpty ? 'No description' : subject.opis,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade700,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
                       ),
                     ),
                   ],

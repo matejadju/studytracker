@@ -24,9 +24,12 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       const TimerScreen(),
-      SubjectsScreen(),
+      SubjectsScreen(
+        onToggleTheme: onToggleTheme,
+        isDarkMode: isDarkMode,
+      ),
       const StatsScreen(),
-      ProfilePage(                    // 👈 OVDE prosledimo
+      ProfilePage(                    
         onToggleTheme: onToggleTheme,
         isDarkMode: isDarkMode,
       ),
