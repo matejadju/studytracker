@@ -4,8 +4,8 @@ class Note {
   final String id;
   final String userId;
   final String title;
-  final String content;          // plain text (za listu, search...)
-  final String? contentDelta;    // JSON iz Quill-a
+  final String content;          
+  final String? contentDelta;    
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -19,7 +19,7 @@ class Note {
     required this.updatedAt,
   });
 
-  /// Factory za čitanje iz Firestore-a
+  
   factory Note.fromDoc(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
@@ -40,7 +40,7 @@ class Note {
     );
   }
 
-  /// Map za upis u Firestore
+  
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
@@ -52,7 +52,7 @@ class Note {
     };
   }
 
-  /// Factory za novu belešku (koristiš ga u editoru)
+  
   factory Note.newNote({
     required String userId,
     required String title,

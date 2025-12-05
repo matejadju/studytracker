@@ -210,9 +210,9 @@ class _TimerScreenState extends State<TimerScreen> {
   }
 }
 
-// ---------------------
-// UI WIDGETI
-// ---------------------
+
+
+
 
 class _SubjectCard extends StatelessWidget {
   const _SubjectCard({
@@ -235,10 +235,10 @@ class _SubjectCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark
             ? theme.colorScheme.surfaceVariant
-            : theme.cardColor, // umesto čisto white
+            : theme.cardColor, 
         borderRadius: BorderRadius.circular(18),
         boxShadow: isDark
-            ? [] // u dark modu bez jake senke
+            ? [] 
             : [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.04),

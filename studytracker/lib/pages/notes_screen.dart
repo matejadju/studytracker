@@ -1,8 +1,8 @@
-// lib/pages/notes_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-// PDF export
+
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
@@ -214,7 +214,7 @@ class _NotesScreenState extends State<NotesScreen> {
     }
   }
 
-  /// -------- PDF EXPORT ZA JEDNU BELEŠKU --------
+  
   Future<void> _exportNoteToPdf(Note note) async {
     final doc = pw.Document();
 
@@ -291,7 +291,7 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 }
 
-// ----------------- EDITOR -----------------
+
 
 class NoteEditorPage extends StatefulWidget {
   const NoteEditorPage({

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'notes_screen.dart'; // 👈 prilagodi putanju ako bude drugačije
+import 'notes_screen.dart'; 
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({
@@ -114,7 +114,7 @@ class _ProfilePageState extends State<ProfilePage> {
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // HEADER
+              
               Container(
                 width: double.infinity,
                 padding:
@@ -189,7 +189,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                   child: Column(
                     children: [
-                      // ACCOUNT INFO
+                      
                       Card(
                         color: isDark ? theme.cardColor : null,
                         elevation: isDark ? 1 : 3,
@@ -236,7 +236,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                       const SizedBox(height: 16),
 
-                      // YOUR NOTES – umesto StudyTracker overview
+                      
                       Card(
                         color: isDark ? theme.cardColor : null,
                         elevation: isDark ? 1 : 3,
@@ -310,7 +310,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                       const SizedBox(height: 24),
 
-                      // EDIT + LOGOUT
+                      
                       Row(
                         children: [
                           Expanded(
@@ -623,7 +623,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 }
 
-// helper za info redove
+
 Widget _infoRow({
   required ThemeData theme,
   required IconData icon,

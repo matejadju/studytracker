@@ -37,7 +37,7 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Kreiraj user-a u Firebase Auth
+      
       final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
@@ -45,7 +45,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
       final uid = cred.user!.uid;
 
-      // 2. Sačuvaj profil u Firestore
+      
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'firstName': firstNameController.text.trim(),
         'lastName': lastNameController.text.trim(),
@@ -53,12 +53,12 @@ class _RegisterPageState extends State<RegisterPage> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // 3. Izloguj user-a – mora ponovo da se loguje
+      
       await FirebaseAuth.instance.signOut();
 
       if (!mounted) return;
 
-      // 4. Samo se vrati nazad na Login stranu
+      
       Navigator.pop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -120,7 +120,7 @@ class _RegisterPageState extends State<RegisterPage> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
-        automaticallyImplyLeading: true, // back strelica ka Login
+        automaticallyImplyLeading: true, 
         actions: [
           IconButton(
             icon: Icon(
@@ -171,7 +171,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // First name
+                    
                     TextField(
                       controller: firstNameController,
                       decoration: _inputDecoration(
@@ -182,7 +182,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Last name
+                    
                     TextField(
                       controller: lastNameController,
                       decoration: _inputDecoration(
@@ -193,7 +193,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Email
+                    
                     TextField(
                       controller: emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -205,7 +205,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Password
+                    
                     TextField(
                       controller: passwordController,
                       obscureText: true,
@@ -217,7 +217,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Confirm password
+                    
                     TextField(
                       controller: repeatPassController,
                       obscureText: true,

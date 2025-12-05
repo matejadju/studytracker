@@ -107,7 +107,7 @@ class _StatsScreenState extends State<StatsScreen> {
     );
 
     return Scaffold(
-      // umesto fiksne svetle pozadine
+      
       backgroundColor:
           isDark ? theme.colorScheme.surface : Colors.grey.shade100,
       body: SafeArea(
@@ -136,7 +136,7 @@ class _StatsScreenState extends State<StatsScreen> {
               ),
               const SizedBox(height: 16),
 
-              // SUBJECT DROPDOWN + WEEKLY/MONTHLY TOGGLE
+              
               Row(
                 children: [
                   Expanded(
@@ -270,7 +270,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     return ListView(
                       padding: const EdgeInsets.only(bottom: 16),
                       children: [
-                        // SUMMARY CARD
+                        
                         _SectionCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,7 +321,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
                         const SizedBox(height: 16),
 
-                        // BAR CHART
+                        
                         _SectionCard(
                           child: SizedBox(
                             height: 240,
@@ -415,7 +415,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
                         const SizedBox(height: 16),
 
-                        // PIE CHART
+                        
                         if (totalWeekdayMinutes > 0)
                           _SectionCard(
                             child: SizedBox(
@@ -480,7 +480,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
                         const SizedBox(height: 16),
 
-                        // HISTORY LIST
+                        
                         _SectionCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,7 +557,7 @@ class _SectionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         color: isDark
             ? theme.colorScheme.surfaceVariant
-            : null, // u light modu koristimo gradient ispod
+            : null, 
         gradient: isDark
             ? null
             : LinearGradient(
@@ -642,7 +642,7 @@ class _PeriodToggle extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         color: isDark
             ? theme.colorScheme.surfaceVariant
-            : Colors.white, // u light belo, u dark surface
+            : Colors.white, 
         boxShadow: isDark
             ? []
             : [

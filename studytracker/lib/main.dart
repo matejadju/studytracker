@@ -24,7 +24,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   ThemeMode _themeMode = ThemeMode.light;
 
-  int _selectedIndex = 0; // <- NOVO
+  int _selectedIndex = 0; 
 
   void _toggleTheme() {
     setState(() {
@@ -33,7 +33,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void _onTabChange(int index) {     // <- NOVO
+  void _onTabChange(int index) {     
     setState(() {
       _selectedIndex = index;
     });
@@ -75,8 +75,8 @@ class _MyAppState extends State<MyApp> {
   home: AuthGate(
     onToggleTheme: _toggleTheme,
     isDarkMode: _themeMode == ThemeMode.dark,
-    selectedIndex: _selectedIndex,       // <- NOVO
-    onTabChange: _onTabChange,           // <- NOVO
+    selectedIndex: _selectedIndex,       
+    onTabChange: _onTabChange,           
   ),
 );
   }
@@ -87,14 +87,14 @@ class AuthGate extends StatelessWidget {
     super.key,
     required this.onToggleTheme,
     required this.isDarkMode,
-    required this.selectedIndex,   // <- NOVO
-    required this.onTabChange,     // <- NOVO
+    required this.selectedIndex,   
+    required this.onTabChange,     
   });
 
   final VoidCallback onToggleTheme;
   final bool isDarkMode;
 
-  final int selectedIndex;               // <- NOVO
+  final int selectedIndex;               
   final ValueChanged<int> onTabChange;
 
   @override
@@ -112,12 +112,12 @@ class AuthGate extends StatelessWidget {
           return HomeScreen(
             onToggleTheme: onToggleTheme,
             isDarkMode: isDarkMode,
-            selectedIndex: selectedIndex,     // <- NOVO
-            onTabChange: onTabChange,         // <- NOVO
+            selectedIndex: selectedIndex,     
+            onTabChange: onTabChange,         
           );
         }
 
-        // nije ulogovan → login (za sada bez togla, može i tu kasnije)
+        
         return LoginPage(
           onToggleTheme: onToggleTheme,
           isDarkMode: isDarkMode,

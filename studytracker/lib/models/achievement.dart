@@ -2,11 +2,11 @@ class Achievement {
   final String id;
   final String title;
   final String description;
-  final int progress; // trenutna vrednost (minuta, dana…)
-  final int target; // cilj
+  final int progress; 
+  final int target; 
   final bool unlocked;
-  final String type; // npr. "time", "streak", "session"
-  final String icon; // samo ime ikonice za UI, npr. "star", "fire"
+  final String type; 
+  final String icon; 
 
   const Achievement({
     required this.id,

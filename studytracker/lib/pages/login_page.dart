@@ -31,7 +31,7 @@ class _LoginPageState extends State<LoginPage> {
 
     if (!mounted) return;
 
-    // samo pokažemo poruku – AuthGate će sam prebaciti na HomeScreen
+    
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Login successful.')),
     );
@@ -142,7 +142,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Email
+                    
                     TextField(
                       controller: emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -154,7 +154,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Password
+                    
                     TextField(
                       controller: passwordController,
                       obscureText: true,
