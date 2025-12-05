@@ -4,6 +4,7 @@ import 'subjects_screen.dart';
 import 'stats_screen.dart';
 import 'profile_page.dart';
 import '../services/notification_service.dart';
+import 'progress_page.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -17,8 +18,8 @@ class HomeScreen extends StatelessWidget {
   final VoidCallback onToggleTheme;
   final bool isDarkMode;
 
-  final int selectedIndex;               
-  final ValueChanged<int> onTabChange;   
+  final int selectedIndex;
+  final ValueChanged<int> onTabChange;
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +29,9 @@ class HomeScreen extends StatelessWidget {
         onToggleTheme: onToggleTheme,
         isDarkMode: isDarkMode,
       ),
-      const StatsScreen(),
-      ProfilePage(                    
+      ProgressPage(), // 👈 NOVA STRANA UBACENA
+      StatsScreen(), // ako želiš, može i da se izbaci
+      ProfilePage(
         onToggleTheme: onToggleTheme,
         isDarkMode: isDarkMode,
       ),
@@ -44,9 +46,8 @@ class HomeScreen extends StatelessWidget {
             icon: Icon(
               isDarkMode ? Icons.light_mode : Icons.dark_mode,
             ),
-            tooltip: isDarkMode
-                ? 'Switch to light mode'
-                : 'Switch to dark mode',
+            tooltip:
+                isDarkMode ? 'Switch to light mode' : 'Switch to dark mode',
             onPressed: onToggleTheme,
           ),
           IconButton(
@@ -65,12 +66,18 @@ class HomeScreen extends StatelessWidget {
         type: BottomNavigationBarType.fixed,
         currentIndex: selectedIndex,
         showUnselectedLabels: true,
-        onTap: onTabChange,   // više nema setState ovde
+        onTap: onTabChange,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.timer), label: "Timer"),
+
           BottomNavigationBarItem(icon: Icon(Icons.book), label: "Subjects"),
+
+          BottomNavigationBarItem(
+              icon: Icon(Icons.insights), label: "Progress"), // 👈 NOVO!
+
           BottomNavigationBarItem(
               icon: Icon(Icons.bar_chart), label: "Statistics"),
+
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
       ),

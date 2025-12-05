@@ -382,8 +382,8 @@ class _StatsScreenState extends State<StatsScreen> {
                                                     top: 4),
                                                 child: Text(
                                                   weekdayLabels[index],
-                                                  style: theme
-                                                      .textTheme.bodySmall,
+                                                  style:
+                                                      theme.textTheme.bodySmall,
                                                 ),
                                               );
                                             },
@@ -511,10 +511,9 @@ class _StatsScreenState extends State<StatsScreen> {
                                     ),
                                     subtitle: Text(
                                       '${_formatDateTime(s.startTime)} → ${_formatDateTime(s.endTime)}',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                        color: theme
-                                            .colorScheme.onSurface
+                                      style:
+                                          theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurface
                                             .withOpacity(0.6),
                                       ),
                                     ),
