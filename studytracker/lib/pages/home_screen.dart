@@ -11,6 +11,9 @@ import 'ai_coach_page.dart';
 import '../services/notification_service.dart';
 import '../services/quote_service.dart';
 
+import '../services/notification_service.dart';
+import '../services/quote_service.dart';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
