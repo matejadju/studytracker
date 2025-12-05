@@ -1,16 +1,17 @@
+import 'dart:math' as math;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import '../models/study_session.dart';
-import '../models/exam.dart';
-import '../models/subject.dart';
-import '../services/study_session_service.dart';
-import '../services/exam_service.dart';
-import '../services/subject_service.dart';
-import 'dart:math' as math;
-
 import '../models/achievement.dart';
+import '../models/exam.dart';
+import '../models/study_session.dart';
+import '../models/subject.dart';
+import '../services/exam_service.dart';
+import '../services/study_session_service.dart';
+import '../services/subject_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProgressPage extends StatelessWidget {
   ProgressPage({super.key});
@@ -49,22 +50,28 @@ class ProgressPage extends StatelessWidget {
 
           final totalMinutes =
               sessions.fold<int>(0, (sum, s) => sum + s.durationMinutes);
-          final xp = totalMinutes; // 1 XP = 1 minute
+          final xp = totalMinutes;
 
           final daysWithSessions = sessions
               .map((s) => DateTime(
-                  s.startTime.year, s.startTime.month, s.startTime.day))
+                    s.startTime.year,
+                    s.startTime.month,
+                    s.startTime.day,
+                  ))
               .toList();
 
           final streaks = _computeStreaks(daysWithSessions);
           final currentStreak = streaks.current;
           final bestStreak = streaks.best;
+
           final achievements = buildAchievements(
             totalMinutes: totalMinutes,
             currentStreak: currentStreak,
             bestStreak: bestStreak,
             sessions: sessions,
           );
+
+          final dailyChallenge = _buildDailyChallenge(sessions);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -77,6 +84,8 @@ class ProgressPage extends StatelessWidget {
                   currentStreak: currentStreak,
                   bestStreak: bestStreak,
                 ),
+                const SizedBox(height: 16),
+                _DailyChallengeCard(challenge: dailyChallenge),
                 const SizedBox(height: 16),
                 AchievementsSection(totalMinutes: totalMinutes),
                 const SizedBox(height: 16),
@@ -96,13 +105,10 @@ class ProgressPage extends StatelessWidget {
     );
   }
 
-  // ------------- helperi za streak -------------
-
   _StreakResult _computeStreaks(List<DateTime> days) {
     if (days.isEmpty) return const _StreakResult(current: 0, best: 0);
     days.sort();
 
-    // unique dani
     final uniqueDays = <DateTime>[];
     DateTime? last;
     for (final d in days) {
@@ -113,7 +119,6 @@ class ProgressPage extends StatelessWidget {
       }
     }
 
-    // best streak
     int best = 1;
     int temp = 1;
     for (int i = 1; i < uniqueDays.length; i++) {
@@ -128,7 +133,6 @@ class ProgressPage extends StatelessWidget {
     }
     if (temp > best) best = temp;
 
-    // current streak (unazad od danas)
     final today = DateTime.now();
     int current = 0;
     DateTime cursor = DateTime(today.year, today.month, today.day);
@@ -141,12 +145,78 @@ class ProgressPage extends StatelessWidget {
 
     return _StreakResult(current: current, best: best);
   }
+
+  _DailyChallenge _buildDailyChallenge(List<StudySession> sessions) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    int todayMinutes = 0;
+    int last7Minutes = 0;
+
+    final from7 = today.subtract(const Duration(days: 7));
+
+    for (final s in sessions) {
+      final day =
+          DateTime(s.startTime.year, s.startTime.month, s.startTime.day);
+
+      if (!s.startTime.isBefore(from7)) {
+        last7Minutes += s.durationMinutes;
+      }
+
+      if (day == today) {
+        todayMinutes += s.durationMinutes;
+      }
+    }
+
+    final avgPerDay = last7Minutes / 7.0;
+
+    int target = avgPerDay.round();
+
+    if (last7Minutes == 0) {
+      target = 30;
+    } else {
+      if (target < 30) target = 30;
+      if (target > 90) target = 90;
+    }
+
+    return _DailyChallenge(
+      title: "Today's challenge",
+      description: 'Study at least $target minutes today.',
+      targetMinutes: target,
+      currentMinutes: todayMinutes,
+    );
+  }
 }
 
 class _StreakResult {
   final int current;
   final int best;
   const _StreakResult({required this.current, required this.best});
+}
+
+// 🔥 Model za daily challenge
+class _DailyChallenge {
+  final String title;
+  final String description;
+  final int targetMinutes;
+  final int currentMinutes;
+
+  const _DailyChallenge({
+    required this.title,
+    required this.description,
+    required this.targetMinutes,
+    required this.currentMinutes,
+  });
+
+  bool get completed => currentMinutes >= targetMinutes;
+
+  double get progress {
+    if (targetMinutes <= 0) return 0;
+    final p = currentMinutes / targetMinutes;
+    if (p < 0) return 0;
+    if (p > 1) return 1;
+    return p;
+  }
 }
 
 List<Achievement> buildAchievements({
@@ -161,7 +231,6 @@ List<Achievement> buildAchievements({
 
   final List<Achievement> list = [];
 
-  // 1) Ukupno vreme učenja
   void addTimeAchievement({
     required String id,
     required String title,
@@ -204,7 +273,6 @@ List<Achievement> buildAchievements({
     targetMinutes: 1200,
   );
 
-  // 2) Najduža sesija
   void addLongSessionAchievement({
     required String id,
     required String title,
@@ -240,7 +308,6 @@ List<Achievement> buildAchievements({
     targetMinutes: 90,
   );
 
-  // 3) Streakovi
   void addStreakAchievement({
     required String id,
     required String title,
@@ -402,6 +469,100 @@ class _GamificationCard extends StatelessWidget {
   }
 }
 
+/* ───────────── DAILY CHALLENGE CARD ───────────── */
+
+class _DailyChallengeCard extends StatelessWidget {
+  const _DailyChallengeCard({required this.challenge});
+
+  final _DailyChallenge challenge;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final progress = challenge.progress;
+    final completed = challenge.completed;
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: completed
+                    ? Colors.green.withOpacity(0.15)
+                    : Colors.blue.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                completed ? Icons.check_circle : Icons.flag_outlined,
+                color: completed ? Colors.green : Colors.blue,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    challenge.title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    challenge.description,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(
+                        '${challenge.currentMinutes} / ${challenge.targetMinutes} min',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      const SizedBox(width: 8),
+                      if (completed)
+                        const Text(
+                          'Completed',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.green,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(50),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 6,
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        completed ? Colors.green : Colors.blue,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /* ───────────── STUDY CALENDAR CARD ───────────── */
 
 class _StudyCalendarCard extends StatefulWidget {
@@ -465,7 +626,6 @@ class _StudyCalendarCardState extends State<_StudyCalendarCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header sa nazivom i 2w / Month toggle
             Row(
               children: [
                 const Text(
@@ -496,7 +656,6 @@ class _StudyCalendarCardState extends State<_StudyCalendarCard> {
               ],
             ),
             const SizedBox(height: 8),
-
             TableCalendar<StudySession>(
               firstDay: DateTime.utc(2020, 1, 1),
               lastDay: DateTime.utc(2030, 12, 31),
@@ -532,7 +691,7 @@ class _StudyCalendarCardState extends State<_StudyCalendarCard> {
                   color: Colors.blue.withOpacity(0.3),
                   shape: BoxShape.circle,
                 ),
-                markerDecoration: BoxDecoration(
+                markerDecoration: const BoxDecoration(
                   color: Colors.orange,
                   shape: BoxShape.circle,
                 ),
@@ -576,10 +735,7 @@ class _StudyCalendarCardState extends State<_StudyCalendarCard> {
                 },
               ),
             ),
-
             const SizedBox(height: 8),
-
-            // lista sesija za izabrani dan
             if (selectedSessions.isEmpty)
               Text(
                 'No sessions on this day.',
@@ -592,7 +748,7 @@ class _StudyCalendarCardState extends State<_StudyCalendarCard> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: selectedSessions.map((s) {
                   String _time(DateTime dt) =>
-                      '${dt.hour.toString().padLeft(2, '0')}:'
+                      '${dt.hour.toString().padLeft(2, '0')}:' +
                       '${dt.minute.toString().padLeft(2, '0')}';
 
                   return ListTile(
@@ -643,8 +799,6 @@ class AchievementsSection extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-
-            // 🔥 horizontalni scroll
             Row(
               children: [
                 Expanded(
@@ -653,7 +807,8 @@ class AchievementsSection extends StatelessWidget {
                     description: "Study at least 60 minutes in total.",
                     current: totalMinutes.toDouble(),
                     target: 60,
-                    isPrimary: true,
+                    // plavo tek kad pređeš 60 minuta
+                    isPrimary: totalMinutes >= 60,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -663,6 +818,7 @@ class AchievementsSection extends StatelessWidget {
                     description: "Study for 5 hours (300 minutes) in total.",
                     current: totalMinutes.toDouble(),
                     target: 300,
+                    isPrimary: totalMinutes >= 300,
                   ),
                 ),
               ],
@@ -701,10 +857,12 @@ class AchievementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final progress = _progress; // <-- double
+    final progress = _progress;
+
+    final bool completed = progress >= 1.0;
 
     return Container(
-      width: 230, // ⬅️ fiksna širina za horizontalni list
+      width: 230,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isPrimary ? Colors.blue.shade50 : Colors.white,
@@ -719,9 +877,9 @@ class AchievementCard extends StatelessWidget {
           Row(
             children: [
               Icon(
-                isPrimary ? Icons.star : Icons.star_border,
+                completed ? Icons.star : Icons.star_border,
                 size: 18,
-                color: isPrimary ? Colors.blue : Colors.grey,
+                color: completed ? Colors.blue : Colors.grey,
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -748,11 +906,11 @@ class AchievementCard extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(50),
             child: LinearProgressIndicator(
-              value: progress, // double
+              value: progress,
               minHeight: 4,
               backgroundColor: Colors.white,
               valueColor: AlwaysStoppedAnimation<Color>(
-                isPrimary ? Colors.blue : Colors.grey.shade500,
+                completed ? Colors.blue : Colors.grey.shade500,
               ),
             ),
           ),
@@ -800,7 +958,6 @@ class _UpcomingExamsSection extends StatelessWidget {
 
         final exams = examSnap.data ?? [];
 
-        // Ako nema ispita – prikaži praznu karticu sa Add dugmetom
         if (exams.isEmpty) {
           return _cardWrapper(
             child: Column(
@@ -833,7 +990,6 @@ class _UpcomingExamsSection extends StatelessWidget {
           );
         }
 
-        // imamo ispite → učitamo predmete da znamo imena
         return FutureBuilder<List<Subject>>(
           future: subjectService.getSubjectsOnce(userId),
           builder: (context, subjSnap) {
@@ -849,7 +1005,6 @@ class _UpcomingExamsSection extends StatelessWidget {
               for (final s in subjects) s.id: s,
             };
 
-            // sortiramo po datumu i uzimamo "najbliži" ispit
             exams.sort((a, b) => a.date.compareTo(b.date));
 
             final now = DateTime.now();
@@ -882,7 +1037,6 @@ class _UpcomingExamsSection extends StatelessWidget {
                       ),
                     ],
                   ),
-
                   if (nextExam != null) ...[
                     const SizedBox(height: 8),
                     _NextExamCountdownCard(
@@ -895,10 +1049,7 @@ class _UpcomingExamsSection extends StatelessWidget {
                     const SizedBox(height: 12),
                     const Divider(height: 1),
                   ],
-
                   const SizedBox(height: 8),
-
-                  // Lista svih ispita ispod velikog countdown-a
                   ...exams.map((e) {
                     final d = DateTime(e.date.year, e.date.month, e.date.day);
                     final diffDays = d.difference(today).inDays.clamp(0, 9999);
@@ -949,7 +1100,6 @@ class _UpcomingExamsSection extends StatelessWidget {
     );
   }
 
-  /// Omot za karticu tako da svuda izgleda isto.
   Widget _cardWrapper({required Widget child}) {
     return Card(
       shape: RoundedRectangleBorder(
@@ -1162,8 +1312,6 @@ class _NextExamCountdownCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-
-          // countdown
           Row(
             children: [
               _countdownBox(
@@ -1177,10 +1325,7 @@ class _NextExamCountdownCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
-          // spremnost – na osnovu minuta učenja u poslednjih 7 dana
           StreamBuilder<List<StudySession>>(
             stream: sessionService.getSessionsForSubject(
               exam.subjectId,
@@ -1197,7 +1342,6 @@ class _NextExamCountdownCard extends StatelessWidget {
                 }
               }
 
-              // 300 min (~5h) = 100% spremnost; možeš da promeniš prag
               final prepRatio =
                   (minutesLast7Days / 300).clamp(0.0, 1.0) as double;
               final prepPercent = (prepRatio * 100).round();
