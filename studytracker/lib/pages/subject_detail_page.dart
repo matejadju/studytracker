@@ -6,8 +6,8 @@ import '../models/goal.dart';
 import '../services/goal_service.dart';
 import '../services/subject_service.dart';
 
-class SubjectDetailPage extends StatelessWidget {
-  SubjectDetailPage({
+class SubjectDetailPage extends StatefulWidget {
+  const SubjectDetailPage({
     super.key,
     required this.subject,
     required this.onToggleTheme,
@@ -15,10 +15,23 @@ class SubjectDetailPage extends StatelessWidget {
   });
 
   final Subject subject;
-  final GoalService _goalService = GoalService();
-
   final VoidCallback onToggleTheme;
   final bool isDarkMode;
+
+  @override
+  State<SubjectDetailPage> createState() => _SubjectDetailPageState();
+}
+
+class _SubjectDetailPageState extends State<SubjectDetailPage> {
+  final GoalService _goalService = GoalService();
+
+  late Subject _subject; // lokalna verzija koja se menja
+
+  @override
+  void initState() {
+    super.initState();
+    _subject = widget.subject;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,14 +45,14 @@ class SubjectDetailPage extends StatelessWidget {
       backgroundColor:
           isDark ? theme.colorScheme.surface : Colors.grey.shade100,
       appBar: AppBar(
-        title: Text(subject.name),
+        title: Text(_subject.name),
         centerTitle: true,
         elevation: 0,
         actions: [
           IconButton(
             icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
             tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
-            onPressed: onToggleTheme,
+            onPressed: widget.onToggleTheme,
           ),
         ],
       ),
@@ -92,16 +105,16 @@ class SubjectDetailPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            subject.name,
+                            _subject.name,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            subject.opis.isEmpty
+                            _subject.opis.isEmpty
                                 ? 'No description provided.'
-                                : subject.opis,
+                                : _subject.opis,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -130,27 +143,25 @@ class SubjectDetailPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 18, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                 child: Row(
                   children: [
                     const Icon(Icons.grade_outlined, size: 28),
                     const SizedBox(width: 16),
-
                     Expanded(
                       child: Text(
-                        subject.grade == null
+                        _subject.grade == null
                             ? "No grade set"
-                            : "Grade: ${subject.grade}",
+                            : "Grade: ${_subject.grade}",
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-
                     ElevatedButton(
                       onPressed: () => _showAddGradeSheet(context),
-                      child: Text(subject.grade == null ? "Add" : "Edit"),
+                      child: Text(_subject.grade == null ? "Add" : "Edit"),
                     ),
                   ],
                 ),
@@ -163,7 +174,7 @@ class SubjectDetailPage extends StatelessWidget {
           // --- GOALS LIST ---
           Expanded(
             child: StreamBuilder<List<Goal>>(
-              stream: _goalService.getGoalsForSubject(uid, subject.id),
+              stream: _goalService.getGoalsForSubject(uid, _subject.id),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(
@@ -237,13 +248,10 @@ class SubjectDetailPage extends StatelessWidget {
                                     goal.id, value);
                               },
                             ),
-
                             const SizedBox(width: 4),
-
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
                                     children: [
@@ -284,11 +292,10 @@ class SubjectDetailPage extends StatelessWidget {
                                   const SizedBox(height: 4),
                                   Text(
                                     dateRange,
-                                    style: theme.textTheme.bodySmall
-                                        ?.copyWith(
-                                            color: theme.textTheme.bodySmall
-                                                ?.color
-                                                ?.withOpacity(0.7)),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.textTheme.bodySmall?.color
+                                          ?.withOpacity(0.7),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -310,7 +317,7 @@ class SubjectDetailPage extends StatelessWidget {
   // ----------------- ADD GRADE BOTTOMSHEET -----------------
 
   void _showAddGradeSheet(BuildContext context) {
-    int selected = subject.grade ?? 6;
+    int selected = _subject.grade ?? 6;
 
     showModalBottomSheet(
       context: context,
@@ -321,7 +328,7 @@ class SubjectDetailPage extends StatelessWidget {
         final isDark = theme.brightness == Brightness.dark;
 
         return StatefulBuilder(
-          builder: (context, setState) => Padding(
+          builder: (context, setModalState) => Padding(
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(ctx).viewInsets.bottom,
               left: 16,
@@ -349,7 +356,7 @@ class SubjectDetailPage extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    "Set grade for ${subject.name}",
+                    "Set grade for ${_subject.name}",
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -370,7 +377,7 @@ class SubjectDetailPage extends StatelessWidget {
                     }).toList(),
                     onChanged: (value) {
                       if (value != null) {
-                        setState(() => selected = value);
+                        setModalState(() => selected = value);
                       }
                     },
                   ),
@@ -382,9 +389,22 @@ class SubjectDetailPage extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () async {
                         await SubjectService()
-                            .updateGrade(subject.id, selected);
+                            .updateGrade(_subject.id, selected);
 
-                        Navigator.pop(context);
+                        if (!mounted) return;
+
+                        setState(() {
+                            _subject = Subject(
+                              id: _subject.id,
+                              name: _subject.name,
+                              opis: _subject.opis,
+                              userId: _subject.userId,   
+                              grade: selected,
+                            );
+                          });
+
+
+                        Navigator.pop(ctx);
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Grade updated")),
@@ -402,9 +422,7 @@ class SubjectDetailPage extends StatelessWidget {
     );
   }
 
-
-
-  // -------- bottom sheet za dodavanje goal-a (dark friendly) --------
+  // -------- VALIDATION DIALOG --------
 
   Future<void> _showValidationDialog(BuildContext context, String message) {
     return showDialog(
@@ -424,6 +442,8 @@ class SubjectDetailPage extends StatelessWidget {
       ),
     );
   }
+
+  // -------- bottom sheet za dodavanje goal-a --------
 
   void _showAddGoalBottomSheet(BuildContext context, String uid) {
     final minutesController = TextEditingController();
@@ -446,7 +466,7 @@ class SubjectDetailPage extends StatelessWidget {
         }
 
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (context, setModalState) {
             final endDate = computeEndDate(selectedPeriod);
 
             return Padding(
@@ -485,7 +505,7 @@ class SubjectDetailPage extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Add goal for ${subject.name}',
+                      'Add goal for ${_subject.name}',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -512,7 +532,7 @@ class SubjectDetailPage extends StatelessWidget {
                             selectedColor:
                                 theme.colorScheme.primary.withOpacity(0.15),
                             onSelected: (_) {
-                              setState(() => selectedPeriod = 'weekly');
+                              setModalState(() => selectedPeriod = 'weekly');
                             },
                           ),
                         ),
@@ -524,7 +544,7 @@ class SubjectDetailPage extends StatelessWidget {
                             selectedColor:
                                 theme.colorScheme.secondary.withOpacity(0.15),
                             onSelected: (_) {
-                              setState(() => selectedPeriod = 'monthly');
+                              setModalState(() => selectedPeriod = 'monthly');
                             },
                           ),
                         ),
@@ -597,7 +617,7 @@ class SubjectDetailPage extends StatelessWidget {
 
                           final goal = Goal(
                             id: '',
-                            subjectId: subject.id,
+                            subjectId: _subject.id,
                             userId: uid,
                             periodType: selectedPeriod,
                             targetMinutes: minutes,
