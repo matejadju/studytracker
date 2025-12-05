@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'notes_screen.dart'; // 👈 prilagodi putanju ako bude drugačije
+
 class ProfilePage extends StatefulWidget {
   const ProfilePage({
     super.key,
@@ -234,78 +236,74 @@ class _ProfilePageState extends State<ProfilePage> {
 
                       const SizedBox(height: 16),
 
-                      // OVERVIEW
+                      // YOUR NOTES – umesto StudyTracker overview
                       Card(
                         color: isDark ? theme.cardColor : null,
                         elevation: isDark ? 1 : 3,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(18.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "StudyTracker overview",
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: textColor,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => NotesScreen(
+                                  userId: uid,
+                                  onToggleTheme: widget.onToggleTheme,
+                                  isDarkMode: widget.isDarkMode,
+                                  ),
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(18.0),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary
+                                        .withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Icon(
+                                    Icons.notes_rounded,
+                                    color: theme.colorScheme.primary,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.timer,
-                                    size: 20,
-                                    color: textColor,
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Your notes",
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: textColor,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "Write quick study notes and export them as PDF.",
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                          color: subTextColor,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    "Total study time:",
-                                    style:
-                                        theme.textTheme.bodyMedium?.copyWith(
-                                      color: textColor,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    "coming soon",
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      fontStyle: FontStyle.italic,
-                                      color: subTextColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.menu_book_outlined,
-                                    size: 20,
-                                    color: textColor,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    "Subjects tracked:",
-                                    style:
-                                        theme.textTheme.bodyMedium?.copyWith(
-                                      color: textColor,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    "coming soon",
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      fontStyle: FontStyle.italic,
-                                      color: subTextColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                ),
+                                const Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  size: 18,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
