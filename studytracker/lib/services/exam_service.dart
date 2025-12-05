@@ -8,8 +8,8 @@ class ExamService {
     await _db.collection('exams').add(exam.toJson());
   }
 
-  /// SVI ispiti korisnika (i prošli i budući),
-  /// sortira se po datumu na klijentu.
+  
+  
   Stream<List<Exam>> getExamsForUser(String userId) {
     return _db
         .collection('exams')
@@ -21,8 +21,8 @@ class ExamService {
         );
   }
 
-  /// Samo "upcoming" – filtriramo po datumu na klijentu
-  /// da NE bismo morali da pravimo Firestore index.
+  
+  
   Stream<List<Exam>> getUpcomingExams(String userId) {
     final todayStart = DateTime.now();
     final startOfToday =

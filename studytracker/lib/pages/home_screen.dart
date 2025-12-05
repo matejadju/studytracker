@@ -1,4 +1,4 @@
-// lib/pages/home_screen.dart
+
 import 'package:flutter/material.dart';
 
 import 'timer_screen.dart';
@@ -109,7 +109,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   // ---------------------------------------------
-  // 🍀 Fortune cookie – samo otvara dialog
+  // Fortune cookie 
   // ---------------------------------------------
   void _showFortuneCookie(BuildContext context) {
     showDialog(
@@ -121,7 +121,7 @@ class HomeScreen extends StatelessWidget {
 }
 
 /// ------------------------------------------------------
-/// Widget za "otvaranje" fortune cookie-a sa animacijom
+/// Widget za "otvaranje" 
 /// ------------------------------------------------------
 class FortuneCookieDialog extends StatefulWidget {
   const FortuneCookieDialog({super.key});
@@ -144,7 +144,7 @@ class _FortuneCookieDialogState extends State<FortuneCookieDialog>
   void initState() {
     super.initState();
 
-    // animacija papirića
+   
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
@@ -210,7 +210,6 @@ class _FortuneCookieDialogState extends State<FortuneCookieDialog>
             child: Container(color: Colors.black.withOpacity(0.45)),
           ),
 
-          // CENTAR DIJALOGA
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -228,7 +227,6 @@ class _FortuneCookieDialogState extends State<FortuneCookieDialog>
 
                 const SizedBox(height: 20),
 
-                // --- LOADING FAZA ---
                 if (_loading)
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -252,7 +250,6 @@ class _FortuneCookieDialogState extends State<FortuneCookieDialog>
                     ),
                   ),
 
-                // --- PRIKAZ QUOTE-A ---
                 if (!_loading)
                   SlideTransition(
                     position: _paperSlide,

@@ -25,7 +25,7 @@ class SubjectDetailPage extends StatefulWidget {
 class _SubjectDetailPageState extends State<SubjectDetailPage> {
   final GoalService _goalService = GoalService();
 
-  late Subject _subject; // lokalna verzija koja se menja
+  late Subject _subject; 
 
   @override
   void initState() {
@@ -75,7 +75,7 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
         children: [
           const SizedBox(height: 12),
 
-          // --- HEADER CARD ---
+          
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Card(
@@ -133,7 +133,7 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
 
           const SizedBox(height: 8),
 
-          // --- GRADE CARD ---
+          
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Card(
@@ -171,7 +171,7 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
 
           const SizedBox(height: 8),
 
-          // --- GOALS LIST ---
+          
           Expanded(
             child: StreamBuilder<List<Goal>>(
               stream: _goalService.getGoalsForSubject(uid, _subject.id),
@@ -314,7 +314,7 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
     );
   }
 
-  // ----------------- ADD GRADE BOTTOMSHEET -----------------
+  
 
   void _showAddGradeSheet(BuildContext context) {
     int selected = _subject.grade ?? 6;
@@ -422,7 +422,7 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
     );
   }
 
-  // -------- VALIDATION DIALOG --------
+  
 
   Future<void> _showValidationDialog(BuildContext context, String message) {
     return showDialog(
@@ -443,7 +443,7 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
     );
   }
 
-  // -------- bottom sheet za dodavanje goal-a --------
+  
 
   void _showAddGoalBottomSheet(BuildContext context, String uid) {
     final minutesController = TextEditingController();

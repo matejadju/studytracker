@@ -3,7 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-/// Singleton servis za lokalne notifikacije
+
 class NotificationService {
   NotificationService._internal();
   static final NotificationService _instance = NotificationService._internal();
@@ -18,7 +18,7 @@ class NotificationService {
     if (_initialized) return;
     _initialized = true;
 
-    // Timezone init
+    
     tz.initializeTimeZones();
     final String timeZoneName = tz.local.name;
     tz.setLocalLocation(tz.getLocation(timeZoneName));
@@ -34,11 +34,11 @@ class NotificationService {
     await _plugin.initialize(
       initSettings,
       onDidReceiveNotificationResponse: (details) {
-        // Ovde po želji možeš da navigiraš na neki screen kad user klikne notifikaciju
+        
       },
     );
 
-    // 🔥 iOS – permission
+    
     if (Platform.isIOS) {
       await _plugin
           .resolvePlatformSpecificImplementation<
@@ -50,7 +50,7 @@ class NotificationService {
           );
     }
 
-    // 🔥 Android 13+ – permission
+    
     if (Platform.isAndroid) {
       await _plugin
           .resolvePlatformSpecificImplementation<
@@ -59,7 +59,7 @@ class NotificationService {
     }
   }
 
-  /// Instant notifikacija
+  
   Future<void> showInstantNotification({
     required String title,
     required String body,
@@ -88,7 +88,7 @@ class NotificationService {
     );
   }
 
-  /// Zakazana notifikacija
+  
   Future<void> scheduleNotification({
     required int id,
     required String title,

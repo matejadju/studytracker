@@ -194,7 +194,7 @@ class _StreakResult {
   const _StreakResult({required this.current, required this.best});
 }
 
-// 🔥 Model za daily challenge
+
 class _DailyChallenge {
   final String title;
   final String description;
@@ -711,9 +711,9 @@ class _StudyCalendarCardState extends State<_StudyCalendarCard> {
                     (sum, s) => sum + s.durationMinutes,
                   );
 
-                  // 0–120+ min → 0.2–1 intenzitet
+                  
                   double t =
-                      (totalMinutes / 120.0).clamp(0.2, 1.0); // max 2h za boju
+                      (totalMinutes / 120.0).clamp(0.2, 1.0); 
                   final color = Color.lerp(
                     Colors.blue.shade200,
                     Colors.blue.shade900,
@@ -807,7 +807,7 @@ class AchievementsSection extends StatelessWidget {
                     description: "Study at least 60 minutes in total.",
                     current: totalMinutes.toDouble(),
                     target: 60,
-                    // plavo tek kad pređeš 60 minuta
+                    
                     isPrimary: totalMinutes >= 60,
                   ),
                 ),

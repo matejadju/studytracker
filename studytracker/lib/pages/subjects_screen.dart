@@ -75,10 +75,10 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
 
           return Column(
             children: [
-              // HEADER
+              
               _buildHeader(context, subjectsCount: subjects.length),
 
-              // AVERAGE GRADE CARD
+              
 StreamBuilder<List<Subject>>(
   stream: _subjectService.getSubjects(uid),
   builder: (context, snapshot) {
@@ -131,7 +131,7 @@ StreamBuilder<List<Subject>>(
 ),
 
 
-              // SEARCH
+              
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -163,7 +163,7 @@ StreamBuilder<List<Subject>>(
 
               const SizedBox(height: 4),
 
-              // LIST
+              
               Expanded(
                 child: filtered.isEmpty
                     ? Center(
@@ -505,7 +505,7 @@ StreamBuilder<List<Subject>>(
   }
 }
 
-/// Jedna kartica za predmet
+
 class _SubjectCard extends StatelessWidget {
   const _SubjectCard({
     required this.subject,
@@ -550,7 +550,7 @@ class _SubjectCard extends StatelessWidget {
                 : const LinearGradient(
                     colors: [
                       Colors.white,
-                      Color(0xFFE5F2FF), // blaga svetla plava
+                      Color(0xFFE5F2FF), 
                     ],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
