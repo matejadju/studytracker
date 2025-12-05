@@ -23,6 +23,8 @@ dependencies:
    # Local notifications
   flutter_local_notifications: ^17.2.2
   timezone: ^0.9.3
+  table_calendar: ^3.0.9
+
 
 
 
