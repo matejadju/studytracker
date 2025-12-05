@@ -5,6 +5,7 @@ import 'stats_screen.dart';
 import 'profile_page.dart';
 import '../services/notification_service.dart';
 import 'progress_page.dart';
+import 'ai_coach_page.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -49,6 +50,18 @@ class HomeScreen extends StatelessWidget {
             tooltip:
                 isDarkMode ? 'Switch to light mode' : 'Switch to dark mode',
             onPressed: onToggleTheme,
+          ),
+          IconButton(
+            icon: const Icon(Icons.psychology),
+            tooltip: 'AI Coach',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AiCoachPage(),
+                ),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.notifications),
