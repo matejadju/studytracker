@@ -8,6 +8,9 @@ import '../models/subject.dart';
 import '../services/study_session_service.dart';
 import '../services/exam_service.dart';
 import '../services/subject_service.dart';
+import 'dart:math' as math;
+
+import '../models/achievement.dart';
 
 class ProgressPage extends StatelessWidget {
   ProgressPage({super.key});
@@ -56,6 +59,12 @@ class ProgressPage extends StatelessWidget {
           final streaks = _computeStreaks(daysWithSessions);
           final currentStreak = streaks.current;
           final bestStreak = streaks.best;
+          final achievements = buildAchievements(
+            totalMinutes: totalMinutes,
+            currentStreak: currentStreak,
+            bestStreak: bestStreak,
+            sessions: sessions,
+          );
 
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -68,6 +77,8 @@ class ProgressPage extends StatelessWidget {
                   currentStreak: currentStreak,
                   bestStreak: bestStreak,
                 ),
+                const SizedBox(height: 16),
+                AchievementsSection(totalMinutes: totalMinutes),
                 const SizedBox(height: 16),
                 _StudyCalendarCard(sessions: sessions),
                 const SizedBox(height: 16),
@@ -136,6 +147,136 @@ class _StreakResult {
   final int current;
   final int best;
   const _StreakResult({required this.current, required this.best});
+}
+
+List<Achievement> buildAchievements({
+  required int totalMinutes,
+  required int currentStreak,
+  required int bestStreak,
+  required List<StudySession> sessions,
+}) {
+  final maxSessionMinutes = sessions.isEmpty
+      ? 0
+      : sessions.map((s) => s.durationMinutes).reduce((a, b) => math.max(a, b));
+
+  final List<Achievement> list = [];
+
+  // 1) Ukupno vreme učenja
+  void addTimeAchievement({
+    required String id,
+    required String title,
+    required String description,
+    required int targetMinutes,
+  }) {
+    final unlocked = totalMinutes >= targetMinutes;
+    list.add(
+      Achievement(
+        id: id,
+        title: title,
+        description: description,
+        progress: totalMinutes.clamp(0, targetMinutes),
+        target: targetMinutes,
+        unlocked: unlocked,
+        type: 'time',
+        icon: 'star',
+      ),
+    );
+  }
+
+  addTimeAchievement(
+    id: 'time_60',
+    title: 'Getting started',
+    description: 'Study at least 60 minutes in total.',
+    targetMinutes: 60,
+  );
+
+  addTimeAchievement(
+    id: 'time_300',
+    title: '5-hour club',
+    description: 'Study for 5 hours (300 minutes) in total.',
+    targetMinutes: 300,
+  );
+
+  addTimeAchievement(
+    id: 'time_1200',
+    title: 'Study marathon',
+    description: 'Study for 20 hours (1200 minutes) in total.',
+    targetMinutes: 1200,
+  );
+
+  // 2) Najduža sesija
+  void addLongSessionAchievement({
+    required String id,
+    required String title,
+    required String description,
+    required int targetMinutes,
+  }) {
+    final unlocked = maxSessionMinutes >= targetMinutes;
+    list.add(
+      Achievement(
+        id: id,
+        title: title,
+        description: description,
+        progress: maxSessionMinutes.clamp(0, targetMinutes),
+        target: targetMinutes,
+        unlocked: unlocked,
+        type: 'session',
+        icon: 'bolt',
+      ),
+    );
+  }
+
+  addLongSessionAchievement(
+    id: 'session_45',
+    title: 'Deep focus',
+    description: 'Finish a session of at least 45 minutes.',
+    targetMinutes: 45,
+  );
+
+  addLongSessionAchievement(
+    id: 'session_90',
+    title: 'Power focus',
+    description: 'Finish a session of at least 90 minutes.',
+    targetMinutes: 90,
+  );
+
+  // 3) Streakovi
+  void addStreakAchievement({
+    required String id,
+    required String title,
+    required String description,
+    required int targetDays,
+  }) {
+    final unlocked = bestStreak >= targetDays;
+    list.add(
+      Achievement(
+        id: id,
+        title: title,
+        description: description,
+        progress: currentStreak.clamp(0, targetDays),
+        target: targetDays,
+        unlocked: unlocked,
+        type: 'streak',
+        icon: 'fire',
+      ),
+    );
+  }
+
+  addStreakAchievement(
+    id: 'streak_3',
+    title: '3-day streak',
+    description: 'Study at least 3 days in a row.',
+    targetDays: 3,
+  );
+
+  addStreakAchievement(
+    id: 'streak_7',
+    title: '7-day streak',
+    description: 'Keep a 7-day study streak.',
+    targetDays: 7,
+  );
+
+  return list;
 }
 
 /* ───────────── GAMIFICATION CARD ───────────── */
@@ -466,6 +607,156 @@ class _StudyCalendarCardState extends State<_StudyCalendarCard> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/* ───────────── ACHIEVEMENTS ───────────── */
+
+class AchievementsSection extends StatelessWidget {
+  const AchievementsSection({
+    super.key,
+    required this.totalMinutes,
+  });
+
+  final int totalMinutes;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Achievements",
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // 🔥 horizontalni scroll
+            Row(
+              children: [
+                Expanded(
+                  child: AchievementCard(
+                    title: "Getting started",
+                    description: "Study at least 60 minutes in total.",
+                    current: totalMinutes.toDouble(),
+                    target: 60,
+                    isPrimary: true,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: AchievementCard(
+                    title: "5-hour club",
+                    description: "Study for 5 hours (300 minutes) in total.",
+                    current: totalMinutes.toDouble(),
+                    target: 300,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AchievementCard extends StatelessWidget {
+  const AchievementCard({
+    super.key,
+    required this.title,
+    required this.description,
+    required this.current,
+    required this.target,
+    this.isPrimary = false,
+  });
+
+  final String title;
+  final String description;
+  final double current;
+  final double target;
+  final bool isPrimary;
+
+  double get _progress {
+    if (target <= 0) return 0;
+    final p = current / target;
+    if (p < 0) return 0;
+    if (p > 1) return 1;
+    return p;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final progress = _progress; // <-- double
+
+    return Container(
+      width: 230, // ⬅️ fiksna širina za horizontalni list
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isPrimary ? Colors.blue.shade50 : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isPrimary ? Colors.blue.shade200 : Colors.grey.shade200,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isPrimary ? Icons.star : Icons.star_border,
+                size: 18,
+                color: isPrimary ? Colors.blue : Colors.grey,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            description,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.grey.shade700,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(50),
+            child: LinearProgressIndicator(
+              value: progress, // double
+              minHeight: 4,
+              backgroundColor: Colors.white,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isPrimary ? Colors.blue : Colors.grey.shade500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
