@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import 'timer_screen.dart';
@@ -11,10 +10,7 @@ import 'ai_coach_page.dart';
 import '../services/notification_service.dart';
 import '../services/quote_service.dart';
 
-import '../services/notification_service.dart';
-import '../services/quote_service.dart';
-
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.onToggleTheme,
@@ -30,21 +26,33 @@ class HomeScreen extends StatelessWidget {
   final ValueChanged<int> onTabChange;
 
   @override
-  Widget build(BuildContext context) {
-    final List<Widget> pages = [
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _pages = [
       const TimerScreen(),
       SubjectsScreen(
-        onToggleTheme: onToggleTheme,
-        isDarkMode: isDarkMode,
+        onToggleTheme: widget.onToggleTheme,
+        isDarkMode: widget.isDarkMode,
       ),
       ProgressPage(),
       StatsScreen(),
       ProfilePage(
-        onToggleTheme: onToggleTheme,
-        isDarkMode: isDarkMode,
+        onToggleTheme: widget.onToggleTheme,
+        isDarkMode: widget.isDarkMode,
       ),
     ];
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -60,11 +68,12 @@ class HomeScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: Icon(
-              isDarkMode ? Icons.light_mode : Icons.dark_mode,
+              widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
             ),
-            tooltip:
-                isDarkMode ? 'Switch to light mode' : 'Switch to dark mode',
-            onPressed: onToggleTheme,
+            tooltip: widget.isDarkMode
+                ? 'Switch to light mode'
+                : 'Switch to dark mode',
+            onPressed: widget.onToggleTheme,
           ),
           IconButton(
             icon: const Icon(Icons.psychology),
@@ -89,12 +98,17 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: pages[selectedIndex],
+
+      body: IndexedStack(
+        index: widget.selectedIndex,
+        children: _pages,
+      ),
+
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: selectedIndex,
+        currentIndex: widget.selectedIndex,
         showUnselectedLabels: true,
-        onTap: onTabChange,
+        onTap: widget.onTabChange,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.timer), label: "Timer"),
           BottomNavigationBarItem(icon: Icon(Icons.book), label: "Subjects"),
@@ -108,9 +122,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ---------------------------------------------
-  // Fortune cookie 
-  // ---------------------------------------------
   void _showFortuneCookie(BuildContext context) {
     showDialog(
       context: context,
@@ -121,7 +132,7 @@ class HomeScreen extends StatelessWidget {
 }
 
 /// ------------------------------------------------------
-/// Widget za "otvaranje" 
+/// Widget za "otvaranje" fortune cookie
 /// ------------------------------------------------------
 class FortuneCookieDialog extends StatefulWidget {
   const FortuneCookieDialog({super.key});
@@ -144,7 +155,6 @@ class _FortuneCookieDialogState extends State<FortuneCookieDialog>
   void initState() {
     super.initState();
 
-   
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
@@ -209,14 +219,12 @@ class _FortuneCookieDialogState extends State<FortuneCookieDialog>
             onTap: () => Navigator.of(context).pop(),
             child: Container(color: Colors.black.withOpacity(0.45)),
           ),
-
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text('🥠', style: TextStyle(fontSize: 64)),
                 const SizedBox(height: 10),
-
                 Text(
                   'Fortune Cookie',
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -224,9 +232,7 @@ class _FortuneCookieDialogState extends State<FortuneCookieDialog>
                     color: Colors.white,
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 if (_loading)
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -245,11 +251,10 @@ class _FortuneCookieDialogState extends State<FortuneCookieDialog>
                         Text(
                           "Cracking your fortune...",
                           style: TextStyle(fontSize: 14),
-                        )
+                        ),
                       ],
                     ),
                   ),
-
                 if (!_loading)
                   SlideTransition(
                     position: _paperSlide,
@@ -257,7 +262,9 @@ class _FortuneCookieDialogState extends State<FortuneCookieDialog>
                       opacity: _paperOpacity,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 12),
+                          horizontal: 18,
+                          vertical: 12,
+                        ),
                         margin: const EdgeInsets.symmetric(horizontal: 30),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.surface,
@@ -267,7 +274,7 @@ class _FortuneCookieDialogState extends State<FortuneCookieDialog>
                               blurRadius: 22,
                               color: Colors.black.withOpacity(0.25),
                               offset: const Offset(0, 8),
-                            )
+                            ),
                           ],
                         ),
                         child: Column(
@@ -292,7 +299,6 @@ class _FortuneCookieDialogState extends State<FortuneCookieDialog>
                       ),
                     ),
                   ),
-
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
@@ -300,7 +306,7 @@ class _FortuneCookieDialogState extends State<FortuneCookieDialog>
                     "Close",
                     style: TextStyle(color: Colors.white),
                   ),
-                )
+                ),
               ],
             ),
           ),
