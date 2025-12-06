@@ -25,6 +25,7 @@ class _StatsScreenState extends State<StatsScreen> {
   bool _loadingSubjects = true;
 
   StatsPeriod _selectedPeriod = StatsPeriod.weekly;
+  int? _selectedYear;
 
   @override
   void initState() {
@@ -135,6 +136,178 @@ class _StatsScreenState extends State<StatsScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+
+              // ----------------------------------------------
+// YEAR FILTER + GLOBAL LINE CHART
+// ----------------------------------------------
+_SectionCard(
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        "Progress by year",
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      const SizedBox(height: 6),
+
+      // Year filter
+      DropdownButtonFormField<int?>(
+        value: _selectedYear,
+        decoration: const InputDecoration(
+          labelText: "Select year",
+          border: OutlineInputBorder(),
+        ),
+        items: [
+          const DropdownMenuItem(
+            value: null,
+            child: Text("All years"),
+          ),
+          ...[1, 2, 3, 4, 5].map(
+            (y) => DropdownMenuItem(
+              value: y,
+              child: Text("Year $y"),
+            ),
+          )
+        ],
+        onChanged: (value) {
+          setState(() => _selectedYear = value);
+        },
+      ),
+
+      const SizedBox(height: 16),
+
+      // LINE CHART
+      FutureBuilder<List<StudySession>>(
+        future: _sessionService.getAllSessions(uid),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const SizedBox(
+              height: 180,
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          final allSessions = snapshot.data!;
+
+          // --- FILTER BY YEAR ---
+          final filtered = _selectedYear == null
+              ? allSessions
+              : allSessions.where((s) {
+                  final subject = _subjects.firstWhere(
+                    (sub) => sub.id == s.subjectId,
+                    orElse: () => Subject(
+                      id: "",
+                      name: "",
+                      opis: "",
+                      userId: "",
+                      year: 1,
+                    ),
+                  );
+                  return subject.year == _selectedYear;
+                }).toList();
+
+          if (filtered.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.only(top: 20),
+              child: Text("No study data for selected year."),
+            );
+          }
+
+          // group by month total minutes
+          Map<int, int> monthlyMinutes = {
+            for (int i = 1; i <= 12; i++) i: 0
+          };
+
+          for (final s in filtered) {
+            monthlyMinutes[s.startTime.month] =
+                monthlyMinutes[s.startTime.month]! + s.durationMinutes;
+          }
+
+          final lineSpots = monthlyMinutes.entries.map((e) {
+            return FlSpot(
+              e.key.toDouble(),
+              e.value.toDouble(),
+            );
+          }).toList();
+
+          // --- BAR CHART UMESTO LINE CHARTA ---
+return SizedBox(
+  height: 240,
+  child: BarChart(
+    BarChartData(
+      gridData: FlGridData(show: true),
+      borderData: FlBorderData(show: false),
+
+      titlesData: FlTitlesData(
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 30,
+            getTitlesWidget: (value, meta) {
+              return Text(
+                value.toInt().toString(),
+                style: theme.textTheme.bodySmall,
+              );
+            },
+          ),
+        ),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 28,
+            getTitlesWidget: (value, meta) {
+              const months = [
+                "",
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+              ];
+
+              if (value < 1 || value > 12) {
+                return const SizedBox.shrink();
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  months[value.toInt()],
+                  style: theme.textTheme.bodySmall,
+                ),
+              );
+            },
+          ),
+        ),
+        topTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        rightTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+      ),
+
+      barGroups: monthlyMinutes.entries.map((e) {
+        return BarChartGroupData(
+          x: e.key,
+          barRods: [
+            BarChartRodData(
+              toY: e.value.toDouble(),
+              width: 18,
+              color: theme.colorScheme.primary,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ],
+        );
+      }).toList(),
+    ),
+  ),
+);
+
+        },
+      ),
+    ],
+  ),
+),
 
               
               Row(

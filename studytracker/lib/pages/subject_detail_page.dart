@@ -122,6 +122,14 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
                                   ?.withOpacity(0.7),
                             ),
                           ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Year of study: ${_subject.year}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -399,6 +407,7 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
                               name: _subject.name,
                               opis: _subject.opis,
                               userId: _subject.userId,   
+                              year: _subject.year,
                               grade: selected,
                             );
                           });
