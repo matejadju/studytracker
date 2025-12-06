@@ -23,6 +23,8 @@ class _AiCoachPageState extends State<AiCoachPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return const Scaffold(
@@ -36,7 +38,7 @@ class _AiCoachPageState extends State<AiCoachPage> {
         title: const Text('AI Study Coach'),
         centerTitle: true,
       ),
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: StreamBuilder<List<StudySession>>(
         stream: _sessionService.getSessionsForUser(uid),
         builder: (context, sessionSnap) {
@@ -480,9 +482,11 @@ class _StatsGrid extends StatelessWidget {
     required String value,
     required ThemeData theme,
   }) {
+    final isDark = theme.brightness == Brightness.dark;
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 2,
+      elevation: isDark ? 1 : 2,
+      color: isDark ? const Color(0xFF18191D) : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Column(
@@ -500,7 +504,10 @@ class _StatsGrid extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
+              style: TextStyle(
+              fontSize: 11,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
             ),
           ],
         ),
@@ -516,6 +523,8 @@ class _BestTimesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final weekdayNames = [
       'Sunday',
       'Monday',
@@ -529,7 +538,8 @@ class _BestTimesCard extends StatelessWidget {
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      elevation: 2,
+      elevation: isDark ? 1 : 2,
+      color: isDark ? const Color(0xFF18191D) : null,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
         child: Column(
@@ -546,7 +556,10 @@ class _BestTimesCard extends StatelessWidget {
             Text(
               "• Most active day: $bestDayName\n"
               "• Best time of day: ${stats.topDayPartLabel}",
-              style: const TextStyle(fontSize: 13, color: Colors.black87),
+              style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface,
+              fontSize: 13,
+            ),
             ),
             const SizedBox(height: 6),
             const Text(
@@ -567,11 +580,13 @@ class _AdviceBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF18191D) : Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.grey.shade300),
       ),
@@ -583,7 +598,10 @@ class _AdviceBubble extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 13.5, height: 1.4),
+              style: theme.textTheme.bodyMedium?.copyWith(
+              fontSize: 13.5,
+              height: 1.4,
+            ),
             ),
           ),
         ],

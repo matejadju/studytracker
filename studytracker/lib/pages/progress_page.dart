@@ -22,6 +22,9 @@ class ProgressPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return const Scaffold(
@@ -32,7 +35,7 @@ class ProgressPage extends StatelessWidget {
     final uid = user.uid;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+    backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Progress'),
         centerTitle: true,
@@ -479,6 +482,7 @@ class _DailyChallengeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final progress = challenge.progress;
     final completed = challenge.completed;
 
@@ -486,7 +490,8 @@ class _DailyChallengeCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
       ),
-      elevation: 2,
+      elevation: isDark ? 1 : 2,
+      color: isDark ? const Color(0xFF18191D) : null,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         child: Row(
@@ -519,7 +524,7 @@ class _DailyChallengeCard extends StatelessWidget {
                   Text(
                     challenge.description,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[700],
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -547,7 +552,9 @@ class _DailyChallengeCard extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 6,
-                      backgroundColor: Colors.grey.shade200,
+                      backgroundColor: isDark
+                    ? Colors.white10
+                    : Colors.grey.shade200,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         completed ? Colors.green : Colors.blue,
                       ),
@@ -614,13 +621,15 @@ class _StudyCalendarCardState extends State<_StudyCalendarCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final selectedSessions = _eventsForDay(_selectedDay);
 
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
       ),
-      elevation: 2,
+      elevation: isDark ? 1 : 2,
+      color: isDark ? const Color(0xFF18191D) : null,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
         child: Column(
@@ -740,7 +749,7 @@ class _StudyCalendarCardState extends State<_StudyCalendarCard> {
               Text(
                 'No sessions on this day.',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.grey,
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
               )
             else
@@ -786,7 +795,10 @@ class AchievementsSection extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
       ),
-      elevation: 2,
+      elevation: Theme.of(context).brightness == Brightness.dark ? 1 : 2,
+      color: Theme.of(context).brightness == Brightness.dark
+      ? const Color(0xFF18191D)
+      : null,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         child: Column(
@@ -857,6 +869,7 @@ class AchievementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final progress = _progress;
 
     final bool completed = progress >= 1.0;
@@ -865,10 +878,14 @@ class AchievementCard extends StatelessWidget {
       width: 230,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isPrimary ? Colors.blue.shade50 : Colors.white,
+        color: isDark
+        ? (isPrimary ? const Color(0xFF1F2228) : const Color(0xFF18191D))
+          : (isPrimary ? Colors.blue.shade50 : Colors.white),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isPrimary ? Colors.blue.shade200 : Colors.grey.shade200,
+          color: isDark
+            ? Colors.white10
+            : (isPrimary ? Colors.blue.shade200 : Colors.grey.shade200),
         ),
       ),
       child: Column(
@@ -898,7 +915,7 @@ class AchievementCard extends StatelessWidget {
           Text(
             description,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.grey.shade700,
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
               fontSize: 12,
             ),
           ),
@@ -908,9 +925,11 @@ class AchievementCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 4,
-              backgroundColor: Colors.white,
+              backgroundColor:
+              isDark ? Colors.white10 : Colors.white,
               valueColor: AlwaysStoppedAnimation<Color>(
-                completed ? Colors.blue : Colors.grey.shade500,
+                completed ? (isDark ? Colors.lightBlueAccent : Colors.blue)
+                : (isDark ? Colors.white54 : Colors.grey.shade500),
               ),
             ),
           ),
