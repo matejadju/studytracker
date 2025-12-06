@@ -146,6 +146,9 @@ class _TimerScreenState extends State<TimerScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     if (user == null) {
       return const Scaffold(
         body: Center(child: Text('You are not logged in.')),
@@ -167,52 +170,48 @@ class _TimerScreenState extends State<TimerScreen> {
         elevation: 0,
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              _SubjectCard(
-                subjects: _subjects,
-                selectedSubjectId: _selectedSubjectId,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedSubjectId = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              _TimerCard(
-                elapsedSeconds: _elapsedSeconds,
-                isRunning: _isRunning,
-                onStart: _startTimer,
-                onPause: _pauseTimer,
-                onFinish: _elapsedSeconds.value > 0 ? _finishTimer : null,
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: _selectedSubjectId == null
-                    ? const Center(
-                        child: Text(
-                          "Select a subject to see your study sessions.",
-                        ),
-                      )
-                    : _SessionsHistory(
-                        subjectId: _selectedSubjectId!,
-                        userId: user.uid,
-                        formatDate: formatDate,
-                      ),
-              ),
-            ],
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                _SubjectCard(
+                  subjects: _subjects,
+                  selectedSubjectId: _selectedSubjectId,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedSubjectId = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                _TimerCard(
+                  elapsedSeconds: _elapsedSeconds,
+                  isRunning: _isRunning,
+                  onStart: _startTimer,
+                  onPause: _pauseTimer,
+                  onFinish: _elapsedSeconds.value > 0 ? _finishTimer : null,
+                ),
+                const SizedBox(height: 16),
+
+                // 🔥 OVO JE KLJUČNO: ListView mora biti shrinkWrap da ne overflow-uje
+                if (_selectedSubjectId != null)
+                  SizedBox(
+                    height: 300, // dovoljno da se sve vidi u oba moda
+                    child: _SessionsHistory(
+                      subjectId: _selectedSubjectId!,
+                      userId: user.uid,
+                      formatDate: formatDate,
+                    ),
+                  )
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
-
-
-
-
 
 class _SubjectCard extends StatelessWidget {
   const _SubjectCard({
@@ -233,12 +232,10 @@ class _SubjectCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark
-            ? theme.colorScheme.surfaceVariant
-            : theme.cardColor, 
+        color: isDark ? theme.colorScheme.surfaceVariant : theme.cardColor,
         borderRadius: BorderRadius.circular(18),
         boxShadow: isDark
-            ? [] 
+            ? []
             : [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.04),
@@ -313,19 +310,18 @@ class _TimerCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
-            colors: isDark
-                ? [
-                    primary.withOpacity(0.95),
-                    secondary.withOpacity(0.9),
-                  ]
-                : [
-                    const Color(0xFF6DB8FF), 
-                    const Color(0xFF3FA9F5),
-                  ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-
+          colors: isDark
+              ? [
+                  primary.withOpacity(0.95),
+                  secondary.withOpacity(0.9),
+                ]
+              : [
+                  const Color(0xFF6DB8FF),
+                  const Color(0xFF3FA9F5),
+                ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         boxShadow: [
           BoxShadow(
             color: primary.withOpacity(0.4),
