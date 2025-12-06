@@ -22,6 +22,7 @@ class SubjectsScreen extends StatefulWidget {
 class _SubjectsScreenState extends State<SubjectsScreen> {
   final SubjectService _subjectService = SubjectService();
   String _searchQuery = '';
+  int? _selectedYear; //null = ALL years
 
   @override
   Widget build(BuildContext context) {
@@ -67,11 +68,11 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
 
           final subjects = snapshot.data!;
           final filtered = subjects
-              .where(
-                (s) =>
-                    s.name.toLowerCase().contains(_searchQuery.toLowerCase()),
-              )
-              .toList();
+            .where((s) =>
+                s.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+            .where((s) => _selectedYear == null || s.year == _selectedYear)
+            .toList();
+
 
           // izračun prosečne ocene iz već učitanih predmeta
           final graded = subjects.where((s) => s.grade != null).toList();
@@ -126,7 +127,40 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                     ),
                   ),
                 ),
+               // ------------------ YEAR FILTER ------------------
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      ChoiceChip(
+                        label: const Text("All"),
+                        selected: _selectedYear == null,
+                        onSelected: (_) {
+                          setState(() => _selectedYear = null);
+                        },
+                      ),
+                      const SizedBox(width: 8),
 
+                      // 1 → 5 godina
+                      ...List.generate(5, (i) {
+                        final year = i + 1;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text("Year $year"),
+                            selected: _selectedYear == year,
+                            onSelected: (_) {
+                              setState(() => _selectedYear = year);
+                            },
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
               // search bar
               Padding(
                 padding:
@@ -347,129 +381,143 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
     );
   }
 
-  Future<void> _showAddEditSubjectDialog({
-    required BuildContext context,
-    required String uid,
-    Subject? existing,
-  }) async {
-    final nameController = TextEditingController(text: existing?.name ?? '');
-    final opisController = TextEditingController(text: existing?.opis ?? '');
+ Future<void> _showAddEditSubjectDialog({
+  required BuildContext context,
+  required String uid,
+  Subject? existing,
+}) async {
+  final nameController = TextEditingController(text: existing?.name ?? '');
+  final opisController = TextEditingController(text: existing?.opis ?? '');
 
-    await showDialog(
-      context: context,
-      builder: (ctx) {
-        final theme = Theme.of(ctx);
-        final isDark = theme.brightness == Brightness.dark;
+  // DODATO — default year (1) ili year postojećeg predmeta
+  int selectedYear = existing?.year ?? 1;
 
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Text(existing == null ? 'Add subject' : 'Edit subject'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Name',
-                    hintText: 'e.g. Mathematics',
-                    prefixIcon: const Icon(Icons.book_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(width: 2),
-                    ),
-                    filled: true,
-                    fillColor: isDark
-                        ? theme.colorScheme.surfaceVariant
-                        : Colors.white,
+  await showDialog(
+    context: context,
+    builder: (ctx) {
+      final theme = Theme.of(ctx);
+      final isDark = theme.brightness == Brightness.dark;
+
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Text(existing == null ? 'Add subject' : 'Edit subject'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  hintText: 'e.g. Mathematics',
+                  prefixIcon: const Icon(Icons.book_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: opisController,
-                  decoration: InputDecoration(
-                    labelText: 'Description',
-                    hintText: 'Optional – short description',
-                    alignLabelWithHint: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(width: 2),
-                    ),
-                    filled: true,
-                    fillColor: isDark
-                        ? theme.colorScheme.surfaceVariant
-                        : Colors.white,
+              ),
+
+              const SizedBox(height: 10),
+
+              TextField(
+                controller: opisController,
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  hintText: 'Optional – short description',
+                  alignLabelWithHint: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  maxLines: 3,
-                  maxLength: 120,
                 ),
-              ],
-            ),
+                maxLines: 3,
+                maxLength: 120,
+              ),
+
+              const SizedBox(height: 10),
+
+              // YEAR DROPDOWN — potpuno ispravno
+              DropdownButtonFormField<int>(
+                value: selectedYear,
+                decoration: InputDecoration(
+                  labelText: 'Year of study',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                items: [1, 2, 3, 4, 5].map((y) {
+                  return DropdownMenuItem(
+                    value: y,
+                    child: Text('Year $y'),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    selectedYear = value;
+                  }
+                },
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final name = nameController.text.trim();
-                final opis = opisController.text.trim();
+        ),
 
-                if (name.isEmpty) {
-                  await _showNameValidationDialog(context);
-                  return;
-                }
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final name = nameController.text.trim();
+              final opis = opisController.text.trim();
 
-                if (existing == null) {
-                  final s = Subject(
-                    id: '',
-                    name: name,
-                    opis: opis,
-                    userId: uid,
-                  );
-                  await _subjectService.addSubject(s);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Subject added.')),
-                  );
-                } else {
-                  final s = Subject(
-                    id: existing.id,
-                    name: name,
-                    opis: opis,
-                    userId: uid,
-                  );
-                  await _subjectService.updateSubject(existing.id, s);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Subject updated.')),
-                  );
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+              if (name.isEmpty) {
+                await _showNameValidationDialog(context);
+                return;
+              }
+
+              if (existing == null) {
+                // NEW SUBJECT
+                final s = Subject(
+                  id: '',
+                  name: name,
+                  opis: opis,
+                  userId: uid,
+                  year: selectedYear,
+                );
+                await _subjectService.addSubject(s);
+              } else {
+                // UPDATE SUBJECT
+                final s = Subject(
+                  id: existing.id,
+                  name: name,
+                  opis: opis,
+                  userId: uid,
+                  year: selectedYear,
+                  grade: existing.grade,
+                );
+                await _subjectService.updateSubject(existing.id, s);
+              }
+
+              if (ctx.mounted) Navigator.pop(ctx);
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(existing == null
+                      ? 'Subject added.'
+                      : 'Subject updated.'),
+                ),
+              );
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
   Future<bool?> _showDeleteConfirmDialog(
     BuildContext context,
@@ -592,6 +640,14 @@ class _SubjectCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Year: ${subject.year}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary.withOpacity(0.85),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
