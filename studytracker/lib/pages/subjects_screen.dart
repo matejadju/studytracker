@@ -19,7 +19,6 @@ class SubjectsScreen extends StatefulWidget {
   State<SubjectsScreen> createState() => _SubjectsScreenState();
 }
 
-
 class _SubjectsScreenState extends State<SubjectsScreen> {
   final SubjectService _subjectService = SubjectService();
   String _searchQuery = '';
@@ -48,7 +47,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
         onPressed: () => _showAddEditSubjectDialog(context: context, uid: uid),
         icon: const Icon(Icons.add),
         label: const Text('Add subject'),
-        backgroundColor: const Color.fromARGB(255, 92, 170, 244),  
+        backgroundColor: const Color.fromARGB(255, 92, 170, 244),
         foregroundColor: Colors.white,
         elevation: 4,
         shape: RoundedRectangleBorder(
@@ -56,7 +55,6 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
         ),
         clipBehavior: Clip.antiAlias,
       ),
-
       body: StreamBuilder<List<Subject>>(
         stream: _subjectService.getSubjects(uid),
         builder: (context, snapshot) {
@@ -69,69 +67,67 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
 
           final subjects = snapshot.data!;
           final filtered = subjects
-              .where((s) =>
-                  s.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+              .where(
+                (s) =>
+                    s.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+              )
               .toList();
 
-          return Column(
+          // izračun prosečne ocene iz već učitanih predmeta
+          final graded = subjects.where((s) => s.grade != null).toList();
+          final double? avgGrade = graded.isEmpty
+              ? null
+              : graded.map((s) => s.grade!).reduce((a, b) => a + b) /
+                  graded.length;
+
+          // UMESTO Column + Expanded koristimo jedan scrollable ListView
+          return ListView(
+            padding: const EdgeInsets.only(top: 0, bottom: 96),
             children: [
-              
+              // gornja plava kartica
               _buildHeader(context, subjectsCount: subjects.length),
 
-              
-StreamBuilder<List<Subject>>(
-  stream: _subjectService.getSubjects(uid),
-  builder: (context, snapshot) {
-    if (!snapshot.hasData) return const SizedBox(height: 0);
-
-    final subjects = snapshot.data!;
-    final graded = subjects.where((s) => s.grade != null).toList();
-
-    if (graded.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        child: Text(
-          "Average grade: N/A",
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      );
-    }
-
-    final avg = graded.map((s) => s.grade!).reduce((a, b) => a + b) / graded.length;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Card(
-        elevation: 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              const Icon(Icons.star_half, size: 28),
-              const SizedBox(width: 12),
-              Text(
-                "Average grade: ${avg.toStringAsFixed(2)}",
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
+              // Average grade – bez dodatnog StreamBuilder-a
+              if (avgGrade == null)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Text(
+                    'Average grade: N/A',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                )
+              else
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Card(
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.star_half, size: 28),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Average grade: ${avgGrade.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  },
-),
 
-
-              
+              // search bar
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -163,100 +159,102 @@ StreamBuilder<List<Subject>>(
 
               const SizedBox(height: 4),
 
-              
-              Expanded(
-                child: filtered.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 32.0, vertical: 8),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.school_outlined,
-                                  size: 56,
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.5)),
-                              const SizedBox(height: 12),
-                              Text(
-                                subjects.isEmpty
-                                    ? 'No subjects yet'
-                                    : 'No results for "$_searchQuery"',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                subjects.isEmpty
-                                    ? 'Tap “Add subject” to create your first subject.'
-                                    : 'Try a different name or clear the search.',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.6),
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
-                        itemCount: filtered.length,
-                        itemBuilder: (context, index) {
-                          final subject = filtered[index];
-                          final initial = subject.name.isNotEmpty
-                              ? subject.name.trim()[0].toUpperCase()
-                              : '?';
-
-                          return _SubjectCard(
-                            subject: subject,
-                            initial: initial,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SubjectDetailPage(
-                                    subject: subject,
-                                    onToggleTheme: widget.onToggleTheme,
-                                    isDarkMode: widget.isDarkMode,
-                                  ),
-                                ),
-                              );
-
-                            },
-                            onEdit: () => _showAddEditSubjectDialog(
-                              context: context,
-                              uid: uid,
-                              existing: subject,
-                            ),
-                            onDelete: () async {
-                              final confirmed = await _showDeleteConfirmDialog(
-                                context,
-                                subject.name,
-                              );
-                              if (confirmed == true) {
-                                await _subjectService.deleteSubject(subject.id);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Subject deleted.'),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                          );
-                        },
+              // lista predmeta ili empty state
+              if (filtered.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32.0,
+                    vertical: 8,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.school_outlined,
+                        size: 56,
+                        color: theme.colorScheme.onSurface.withOpacity(0.5),
                       ),
-              ),
+                      const SizedBox(height: 12),
+                      Text(
+                        subjects.isEmpty
+                            ? 'No subjects yet'
+                            : 'No results for "$_searchQuery"',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subjects.isEmpty
+                            ? 'Tap “Add subject” to create your first subject.'
+                            : 'Try a different name or clear the search.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                )
+              else
+                // mapiramo filtered u listu kartica
+                ...filtered.map((subject) {
+                  final initial = subject.name.isNotEmpty
+                      ? subject.name.trim()[0].toUpperCase()
+                      : '?';
+
+                  return Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                    child: _SubjectCard(
+                      subject: subject,
+                      initial: initial,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SubjectDetailPage(
+                              subject: subject,
+                              onToggleTheme: widget.onToggleTheme,
+                              isDarkMode: widget.isDarkMode,
+                            ),
+                          ),
+                        );
+                      },
+                      onEdit: () => _showAddEditSubjectDialog(
+                        context: context,
+                        uid: uid,
+                        existing: subject,
+                      ),
+                      onDelete: () async {
+                        final confirmed = await _showDeleteConfirmDialog(
+                          context,
+                          subject.name,
+                        );
+                        if (confirmed == true) {
+                          await _subjectService.deleteSubject(subject.id);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Subject deleted.'),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  );
+                }).toList(),
             ],
           );
         },
       ),
     );
   }
+
+  // ------------------------------------------------------------------------
+  // Helper metode unutar _SubjectsScreenState
+  // ------------------------------------------------------------------------
 
   Widget _buildHeader(BuildContext context, {required int subjectsCount}) {
     final theme = Theme.of(context);
@@ -304,7 +302,7 @@ StreamBuilder<List<Subject>>(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Your subjects",
+                    'Your subjects',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -314,8 +312,8 @@ StreamBuilder<List<Subject>>(
                   const SizedBox(height: 2),
                   Text(
                     subjectsCount == 0
-                        ? "Start by adding a subject you study."
-                        : "$subjectsCount subject${subjectsCount == 1 ? '' : 's'} tracked in StudyTracker.",
+                        ? 'Start by adding a subject you study.'
+                        : '$subjectsCount subject${subjectsCount == 1 ? '' : 's'} tracked in StudyTracker.',
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 12,
@@ -505,6 +503,9 @@ StreamBuilder<List<Subject>>(
   }
 }
 
+// --------------------------------------------------------------------------
+// Kartica za jedan predmet
+// --------------------------------------------------------------------------
 
 class _SubjectCard extends StatelessWidget {
   const _SubjectCard({
@@ -550,7 +551,7 @@ class _SubjectCard extends StatelessWidget {
                 : const LinearGradient(
                     colors: [
                       Colors.white,
-                      Color(0xFFE5F2FF), 
+                      Color(0xFFE5F2FF),
                     ],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,

@@ -5,11 +5,19 @@ import 'services/notification_service.dart';
 
 import 'pages/login_page.dart';
 import 'pages/home_screen.dart';
+import 'package:flutter/services.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await NotificationService().init();
+
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
 
   runApp(const MyApp());
 }
@@ -24,7 +32,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   ThemeMode _themeMode = ThemeMode.light;
 
-  int _selectedIndex = 0; 
+  int _selectedIndex = 0;
 
   void _toggleTheme() {
     setState(() {
@@ -33,7 +41,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void _onTabChange(int index) {     
+  void _onTabChange(int index) {
     setState(() {
       _selectedIndex = index;
     });
@@ -65,20 +73,19 @@ class _MyAppState extends State<MyApp> {
       ),
     );
 
-
     return MaterialApp(
-  title: 'StudyTracker',
-  debugShowCheckedModeBanner: false,
-  theme: lightTheme,
-  darkTheme: darkTheme,
-  themeMode: _themeMode,
-  home: AuthGate(
-    onToggleTheme: _toggleTheme,
-    isDarkMode: _themeMode == ThemeMode.dark,
-    selectedIndex: _selectedIndex,       
-    onTabChange: _onTabChange,           
-  ),
-);
+      title: 'StudyTracker',
+      debugShowCheckedModeBanner: false,
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: _themeMode,
+      home: AuthGate(
+        onToggleTheme: _toggleTheme,
+        isDarkMode: _themeMode == ThemeMode.dark,
+        selectedIndex: _selectedIndex,
+        onTabChange: _onTabChange,
+      ),
+    );
   }
 }
 
@@ -87,14 +94,14 @@ class AuthGate extends StatelessWidget {
     super.key,
     required this.onToggleTheme,
     required this.isDarkMode,
-    required this.selectedIndex,   
-    required this.onTabChange,     
+    required this.selectedIndex,
+    required this.onTabChange,
   });
 
   final VoidCallback onToggleTheme;
   final bool isDarkMode;
 
-  final int selectedIndex;               
+  final int selectedIndex;
   final ValueChanged<int> onTabChange;
 
   @override
@@ -112,17 +119,15 @@ class AuthGate extends StatelessWidget {
           return HomeScreen(
             onToggleTheme: onToggleTheme,
             isDarkMode: isDarkMode,
-            selectedIndex: selectedIndex,     
-            onTabChange: onTabChange,         
+            selectedIndex: selectedIndex,
+            onTabChange: onTabChange,
           );
         }
 
-        
         return LoginPage(
           onToggleTheme: onToggleTheme,
           isDarkMode: isDarkMode,
         );
-
       },
     );
   }
