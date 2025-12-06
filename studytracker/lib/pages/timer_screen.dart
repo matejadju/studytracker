@@ -18,13 +18,11 @@ class _TimerScreenState extends State<TimerScreen> {
   final StudySessionService _sessionService = StudySessionService();
   final SubjectService _subjectService = SubjectService();
 
-  Timer? _timer;
-  bool _isRunning = false;
-
-  final ValueNotifier<int> _elapsedSeconds = ValueNotifier<int>(0);
-
-  String? _selectedSubjectId;
-  DateTime? _startTime;
+  static Timer? _timer;
+  static bool _isRunning = false;
+  static final ValueNotifier<int> _elapsedSeconds = ValueNotifier<int>(0);
+  static String? _selectedSubjectId;
+  static DateTime? _startTime;
 
   List<Subject> _subjects = [];
   bool _loadingSubjects = true;
@@ -51,14 +49,18 @@ class _TimerScreenState extends State<TimerScreen> {
   void initState() {
     super.initState();
 
+    print("TIMER — INIT STATE");
+
     final user = FirebaseAuth.instance.currentUser!;
     _subjectService.getSubjectsOnce(user.uid).then((list) {
       if (!mounted) return;
       setState(() {
         _subjects = list;
-        if (_subjects.isNotEmpty) {
+
+        if (_subjects.isNotEmpty && _selectedSubjectId == null) {
           _selectedSubjectId = _subjects.first.id;
         }
+
         _loadingSubjects = false;
       });
     });
@@ -79,9 +81,8 @@ class _TimerScreenState extends State<TimerScreen> {
       _startTime ??= DateTime.now();
     });
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _timer ??= Timer.periodic(const Duration(seconds: 1), (_) {
       _elapsedSeconds.value++;
-      if (mounted) {}
     });
   }
 
@@ -89,6 +90,8 @@ class _TimerScreenState extends State<TimerScreen> {
     if (!_isRunning) return;
 
     _timer?.cancel();
+    _timer = null;
+
     setState(() {
       _isRunning = false;
     });
@@ -102,6 +105,7 @@ class _TimerScreenState extends State<TimerScreen> {
     }
 
     _timer?.cancel();
+    _timer = null;
 
     final endTime = DateTime.now();
     final durationMinutes = (_elapsedSeconds.value / 60).ceil();
@@ -126,7 +130,6 @@ class _TimerScreenState extends State<TimerScreen> {
     );
 
     setState(() {
-      _timer = null;
       _isRunning = false;
       _startTime = null;
       _elapsedSeconds.value = 0;
@@ -135,8 +138,7 @@ class _TimerScreenState extends State<TimerScreen> {
 
   @override
   void dispose() {
-    _timer?.cancel();
-    _elapsedSeconds.dispose();
+    print("TIMER — DISPOSED");
     super.dispose();
   }
 
@@ -145,9 +147,6 @@ class _TimerScreenState extends State<TimerScreen> {
     final user = FirebaseAuth.instance.currentUser;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
 
     if (user == null) {
       return const Scaffold(
@@ -193,11 +192,9 @@ class _TimerScreenState extends State<TimerScreen> {
                   onFinish: _elapsedSeconds.value > 0 ? _finishTimer : null,
                 ),
                 const SizedBox(height: 16),
-
-                // 🔥 OVO JE KLJUČNO: ListView mora biti shrinkWrap da ne overflow-uje
                 if (_selectedSubjectId != null)
                   SizedBox(
-                    height: 300, // dovoljno da se sve vidi u oba moda
+                    height: 300,
                     child: _SessionsHistory(
                       subjectId: _selectedSubjectId!,
                       userId: user.uid,
@@ -212,6 +209,7 @@ class _TimerScreenState extends State<TimerScreen> {
     );
   }
 }
+
 
 class _SubjectCard extends StatelessWidget {
   const _SubjectCard({
@@ -300,10 +298,9 @@ class _TimerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     final primary = theme.colorScheme.primary;
     final secondary = theme.colorScheme.secondary;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
@@ -315,9 +312,9 @@ class _TimerCard extends StatelessWidget {
                   primary.withOpacity(0.95),
                   secondary.withOpacity(0.9),
                 ]
-              : [
-                  const Color(0xFF6DB8FF),
-                  const Color(0xFF3FA9F5),
+              : const [
+                  Color(0xFF6DB8FF),
+                  Color(0xFF3FA9F5),
                 ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
